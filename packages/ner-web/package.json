@@ -1,6 +1,6 @@
 {
   "name": "@piighost/ner-web",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Browser NER runners that return character spans, ready for piighost's BridgeDetector",
   "keywords": [
     "ner",
@@ -38,8 +38,12 @@
     "onnxruntime-web": ">=1.30.0"
   },
   "peerDependenciesMeta": {
-    "@huggingface/transformers": { "optional": true },
-    "onnxruntime-web": { "optional": true }
+    "@huggingface/transformers": {
+      "optional": true
+    },
+    "onnxruntime-web": {
+      "optional": true
+    }
   },
   "dependencies": {
     "@huggingface/tokenizers": "^0.2.0"
