@@ -30,10 +30,13 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # Pas de registry-url ici. setup-node écrirait alors un .npmrc renvoyant
+      # à NODE_AUTH_TOKEN, qui n'existe pas puisque tout l'intérêt est de ne
+      # stocker aucun secret. npm enverrait ce jeton vide et échouerait en 401
+      # sans jamais tenter l'échange OIDC.
       - uses: actions/setup-node@v5
         with:
           node-version: 22
-          registry-url: https://registry.npmjs.org
 
       # La version du npm fournie avec Node est souvent antérieure au support
       # OIDC, et l'échec qu'elle produit ne dit pas pourquoi.
