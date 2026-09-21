@@ -26,3 +26,6 @@ demo/web/models/
 
 # Captures de test
 *.png
+
+# Jamais versionné, il porterait un jeton
+.npmrc
