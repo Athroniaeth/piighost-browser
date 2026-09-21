@@ -202,14 +202,26 @@ différentes, parce que se tromper de disposition de sortie ne lève aucune erre
 et ne produit que des scores incohérents.
 
 ```
-repo_gliner-pii-small-v1.0 | 10 cas, 29 entités, écart max 4,90e-07
+gold.json       | 10 cas,  29 entités, écart max 4,90e-07
   GLiNER token-level, tokeniseur BPE (ettin-encoder-68m)
-onnxrepo | 4 cas, 8 entités, écart max 4,79e-07
+gold-span.json  |  4 cas,   8 entités, écart max 4,79e-07
   GLiNER span-level, tokeniseur Unigram (mdeberta-v3-base)
-transformers | 7 cas, 19 entités, écart max 5,00e-07
+gold-long.json  |  3 cas, 128 entités, écart max 5,10e-07
+  textes de 231 à 1600 caractères
+transformers    |  7 cas,  19 entités, écart max 5,00e-07
   token-classification BIO, pré-tokeniseur BERT
 PARITÉ OK
 ```
+
+`test/window.mjs` couvre à part ce que la parité ne peut pas voir : un texte
+plus long que la fenêtre du modèle ne doit pas perdre sa fin. Échouer est
+acceptable, l'appelant découpe alors, et analyser jusqu'au bout l'est aussi.
+Réussir en n'ayant lu qu'un préfixe ne l'est pas, puisque les valeurs de la fin
+resteraient en clair sans que rien ne le signale. Le repère est une entité
+placée au dernier caractère. Sur 14 229 caractères, GLiNER lit jusqu'au bout et
+le moteur transformers refuse.
+
+Ce cas manquait, et le défaut est parti en production avant d'être vu.
 
 Un piège rencontré en route, qui vaut pour tout modèle : **l'export ONNX d'un
 modèle n'est pas le modèle**. Pour `bert-small-pii-detection`, le dépôt PyTorch
