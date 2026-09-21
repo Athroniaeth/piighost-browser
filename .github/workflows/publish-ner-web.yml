@@ -62,5 +62,14 @@ jobs:
       # page du paquet. Le staging dépose la version, un mainteneur la promeut
       # ensuite avec son 2FA, ce qui met une main humaine entre un workflow
       # compromis et les utilisateurs.
+      - name: Diagnostic OIDC
+        run: |
+          echo "npm $(npm -v)"
+          echo "ACTIONS_ID_TOKEN_REQUEST_URL présent : ${ACTIONS_ID_TOKEN_REQUEST_URL:+oui}${ACTIONS_ID_TOKEN_REQUEST_URL:-non}"
+          echo "ACTIONS_ID_TOKEN_REQUEST_TOKEN présent : ${ACTIONS_ID_TOKEN_REQUEST_TOKEN:+oui}${ACTIONS_ID_TOKEN_REQUEST_TOKEN:-non}"
+          echo "--- .npmrc éventuels ---"
+          cat ~/.npmrc 2>/dev/null || echo "(pas de ~/.npmrc)"
+          cat .npmrc 2>/dev/null || echo "(pas de .npmrc local)"
+
       - name: Staging de la version
-        run: npm stage publish
+        run: npm stage publish --loglevel verbose
