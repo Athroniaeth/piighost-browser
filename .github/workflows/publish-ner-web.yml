@@ -1,0 +1,58 @@
+# Publie @piighost/ner-web sans jeton, par OIDC.
+#
+# npm reconnaît ce workflow comme éditeur de confiance, donc aucun secret n'est
+# stocké dans le dépôt. Le nom du fichier compte : il est déclaré tel quel dans
+# la configuration du paquet sur npmjs.com, donc le renommer casse la publication.
+#
+# Le premier envoi d'un paquet ne peut pas passer par là. npm exige que le
+# paquet existe avant d'accepter une configuration d'éditeur de confiance, donc
+# la version initiale part avec un jeton, puis ce workflow prend le relais.
+name: publish ner-web
+
+on:
+  push:
+    tags:
+      - "ner-web-v*"
+  workflow_dispatch:
+
+permissions:
+  # Sans cela, npm ne reçoit aucun jeton OIDC et retombe sur une authentification
+  # qui n'existe pas ici.
+  id-token: write
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/ner-web
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      # La version du npm fournie avec Node est souvent antérieure au support
+      # OIDC, et l'échec qu'elle produit ne dit pas pourquoi.
+      - name: Mettre npm à jour
+        run: npm install -g npm@latest
+
+      - name: Installer
+        run: npm ci
+
+      # Le répertoire du paquet héberge le cache modèle de transformers.js, qui
+      # pèse plus de cent mégaoctets. Le champ files l'exclut, et cette étape
+      # vérifie qu'il l'exclut toujours.
+      - name: Vérifier le contenu du paquet
+        run: |
+          npm pack --dry-run 2>&1 | tee /tmp/pack.txt
+          if grep -qE '\.onnx|\.cache/' /tmp/pack.txt; then
+            echo "Des poids de modèle entreraient dans le paquet." >&2
+            exit 1
+          fi
+
+      - name: Publier
+        run: npm publish
