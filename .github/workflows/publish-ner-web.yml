@@ -54,5 +54,10 @@ jobs:
             exit 1
           fi
 
-      - name: Publier
-        run: npm publish
+      # npm stage publish est toujours autorisé à un éditeur de confiance,
+      # npm publish ne l'est que si la case Allow npm publish est cochée sur la
+      # page du paquet. Le staging dépose la version, un mainteneur la promeut
+      # ensuite avec son 2FA, ce qui met une main humaine entre un workflow
+      # compromis et les utilisateurs.
+      - name: Staging de la version
+        run: npm stage publish
