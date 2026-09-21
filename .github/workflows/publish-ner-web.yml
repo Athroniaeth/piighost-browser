@@ -39,9 +39,12 @@ jobs:
           node-version: 22
 
       # La version du npm fournie avec Node est souvent antérieure au support
-      # OIDC, et l'échec qu'elle produit ne dit pas pourquoi.
-      - name: Mettre npm à jour
-        run: npm install -g npm@latest
+      # OIDC, et l'échec qu'elle produit ne dit pas pourquoi. La version est
+      # figée plutôt que suivie : ce npm là détient le droit de publier via
+      # OIDC, donc une version compromise publierait sous notre nom. Le prix
+      # est de la relever à la main.
+      - name: Installer npm 12.0.2
+        run: npm install -g npm@12.0.2
 
       - name: Installer
         run: npm ci
