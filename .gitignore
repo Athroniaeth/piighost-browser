@@ -1,0 +1,28 @@
+# Dépendances
+node_modules/
+.venv/
+
+# Artefacts de build
+dist/
+site/
+
+# Poids de modèles et caches, tirés du Hub à la demande
+*.onnx
+*.whl
+.cache/
+hfcache/
+.icu74/
+ref/repo_*/
+ref/onnxrepo/
+
+# Actifs dérivés, régénérés par un script
+app/public/pyodide/
+app/public/ort/
+demo/web/vendor/
+demo/web/pyodide/
+demo/web/ort/
+demo/web/ort131/
+demo/web/models/
+
+# Captures de test
+*.png

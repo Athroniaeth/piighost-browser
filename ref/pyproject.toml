@@ -1,0 +1,13 @@
+[project]
+name = "gliner-ref"
+version = "0"
+requires-python = ">=3.11"
+dependencies = ["gliner[onnx]>=0.2.29", "onnxruntime>=1.20"]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }

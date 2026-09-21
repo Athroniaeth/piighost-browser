@@ -1,0 +1,192 @@
+/*
+ * Design tokens, taken from piighost-studio so the hub reads as one product with
+ * the rest of the ecosystem: shadcn neutral scale, one violet primary, Geist for
+ * text and code, 0.625rem radius. Light is the default and dark is a class on
+ * <html>, toggled by the visitor, never inferred from the system, as the studio
+ * does.
+ *
+ * Everything is a real stylesheet, never an inline style: the production CSP is
+ * `style-src 'self'` with no `unsafe-inline`. Fonts are self-hosted for the same
+ * reason, `default-src 'self'` covers font-src.
+ */
+
+@import "@fontsource-variable/geist";
+@import "@fontsource-variable/geist-mono";
+@import "tailwindcss";
+
+/* The label palette lives in a TypeScript module, not in a component. Tailwind
+   keeps only the classes it has seen in a scanned file and skips anything the
+   .gitignore excludes; the root's Python `lib/` rule once matched this folder and
+   every entity chip rendered uncoloured. Naming the module keeps that from
+   coming back with the next ignore rule. */
+@source "./lib/labels.ts";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono:
+    "Geist Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.51 0.23 277);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.51 0.23 277);
+  --radius: 0.625rem;
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.62 0.19 277);
+  --primary-foreground: oklch(0.13 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.62 0.19 277);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans antialiased;
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* The studio scales the whole UI on large displays: everything is sized in rem,
+   so bumping the root acts like a browser zoom. Never use px font sizes. */
+@media (min-width: 1920px) {
+  html {
+    font-size: 18px;
+  }
+}
+@media (min-width: 2560px) {
+  html {
+    font-size: 21px;
+  }
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+}
+.skip-link:focus {
+  @apply left-2 top-2 z-50 rounded-md border bg-background px-3 py-2 text-sm;
+}
+
+/* Syntax tokens for TOML and regex, as classes: a highlighter that wrote
+   `style=` attributes would work in development and be blocked in production. */
+.tok-comment {
+  @apply text-muted-foreground italic;
+}
+.tok-section {
+  @apply font-semibold text-primary;
+}
+.tok-key {
+  @apply text-foreground;
+}
+.tok-string {
+  @apply text-emerald-700 dark:text-emerald-300;
+}
+.tok-number,
+.tok-boolean {
+  @apply text-amber-700 dark:text-amber-300;
+}
+.tok-punctuation {
+  @apply text-muted-foreground;
+}
+
+.tok-class {
+  @apply font-semibold text-primary;
+}
+.tok-escape {
+  @apply text-sky-700 dark:text-sky-300;
+}
+.tok-group {
+  @apply text-rose-700 dark:text-rose-300;
+}
+.tok-set {
+  @apply text-emerald-700 dark:text-emerald-300;
+}
+.tok-quantifier {
+  @apply font-semibold text-amber-700 dark:text-amber-300;
+}
+.tok-alternation,
+.tok-anchor {
+  @apply font-semibold text-fuchsia-700 dark:text-fuchsia-300;
+}
+
+/* A coverage sheet is meant to be printed: controls go, ink stays black. */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  :root,
+  .dark {
+    --background: #fff;
+    --card: #fff;
+    --foreground: #000;
+    --border: #999;
+  }
+}

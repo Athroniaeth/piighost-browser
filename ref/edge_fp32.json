@@ -1,0 +1,86 @@
+[
+ {
+  "start": 0,
+  "end": 7,
+  "text": "Bonjour",
+  "label": "location",
+  "score": 0.568837
+ },
+ {
+  "start": 17,
+  "end": 28,
+  "text": "Jean Dupont",
+  "label": "person",
+  "score": 0.67959
+ },
+ {
+  "start": 59,
+  "end": 63,
+  "text": "Lyon",
+  "label": "location",
+  "score": 0.50572
+ },
+ {
+  "start": 78,
+  "end": 92,
+  "text": "06 12 34 56 78",
+  "label": "phone number",
+  "score": 0.917155
+ },
+ {
+  "start": 101,
+  "end": 119,
+  "text": "dupont@example.com",
+  "label": "email address",
+  "score": 0.633217
+ },
+ {
+  "start": 134,
+  "end": 161,
+  "text": "FR7630006000011234567890189",
+  "label": "iban",
+  "score": 0.563456
+ },
+ {
+  "start": 163,
+  "end": 174,
+  "text": "Jean Dupont",
+  "label": "person",
+  "score": 0.746148
+ },
+ {
+  "start": 190,
+  "end": 206,
+  "text": "Acme Corporation",
+  "label": "organization",
+  "score": 0.859725
+ },
+ {
+  "start": 0,
+  "end": 21,
+  "text": "Contactez Marie Curie",
+  "label": "person",
+  "score": 0.457858
+ },
+ {
+  "start": 23,
+  "end": 42,
+  "text": "marie.curie@labo.fr",
+  "label": "email address",
+  "score": 0.709927
+ },
+ {
+  "start": 47,
+  "end": 61,
+  "text": "06 11 22 33 44",
+  "label": "phone number",
+  "score": 0.790191
+ },
+ {
+  "start": 64,
+  "end": 69,
+  "text": "Paris",
+  "label": "location",
+  "score": 0.703606
+ }
+]

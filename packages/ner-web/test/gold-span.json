@@ -1,0 +1,88 @@
+{
+ "labels": [
+  "person",
+  "email address",
+  "phone number",
+  "location",
+  "organization"
+ ],
+ "threshold": 0.3,
+ "cases": [
+  {
+   "text": "Bonjour, je suis Jean Dupont, j'habite 12 rue de la Paix à Lyon. Joignable au 06 12 34 56 78 ou jean.dupont@example.com. Jean-Luc Mélenchon travaille chez Acme Corporation.",
+   "entities": [
+    {
+     "text": "Jean Dupont",
+     "start": 17,
+     "end": 28,
+     "label": "person",
+     "score": 0.459188
+    },
+    {
+     "text": "Jean-Luc Mélenchon",
+     "start": 121,
+     "end": 139,
+     "label": "person",
+     "score": 0.380508
+    },
+    {
+     "text": "Acme Corporation",
+     "start": 155,
+     "end": 171,
+     "label": "organization",
+     "score": 0.335339
+    }
+   ]
+  },
+  {
+   "text": "Contactez Marie Curie (marie.curie@labo.fr) au 06 11 22 33 44 a Paris.",
+   "entities": [
+    {
+     "text": "Marie Curie",
+     "start": 10,
+     "end": 21,
+     "label": "organization",
+     "score": 0.30736
+    }
+   ]
+  },
+  {
+   "text": "Dr. Smith saw patient John Doe at Mercy Hospital, London.",
+   "entities": [
+    {
+     "text": "Dr. Smith",
+     "start": 0,
+     "end": 9,
+     "label": "person",
+     "score": 0.566024
+    },
+    {
+     "text": "John Doe",
+     "start": 22,
+     "end": 30,
+     "label": "person",
+     "score": 0.366494
+    },
+    {
+     "text": "Mercy Hospital",
+     "start": 34,
+     "end": 48,
+     "label": "organization",
+     "score": 0.402219
+    }
+   ]
+  },
+  {
+   "text": "北京 office: contact Li Wei, or call Zoé Béranger.",
+   "entities": [
+    {
+     "text": "北京 office",
+     "start": 0,
+     "end": 9,
+     "label": "location",
+     "score": 0.332875
+    }
+   ]
+  }
+ ]
+}

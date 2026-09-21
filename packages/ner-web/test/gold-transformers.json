@@ -1,0 +1,173 @@
+{
+ "model": "onnx-community/bert-small-pii-detection-ONNX",
+ "threshold": 0.5,
+ "cases": [
+  {
+   "text": "Jean Dupont habite a Lyon.",
+   "entities": [
+    {
+     "text": "Jean Dupont habite",
+     "start": 0,
+     "end": 18,
+     "label": "PERSON",
+     "score": 0.965382
+    },
+    {
+     "text": "Lyon",
+     "start": 21,
+     "end": 25,
+     "label": "LOCATION",
+     "score": 0.60568
+    }
+   ]
+  },
+  {
+   "text": "Contactez Marie Curie (marie.curie@labo.fr) au 06 11 22 33 44.",
+   "entities": [
+    {
+     "text": "Contactez",
+     "start": 0,
+     "end": 9,
+     "label": "PERSON",
+     "score": 0.884556
+    },
+    {
+     "text": "Marie Curie",
+     "start": 10,
+     "end": 21,
+     "label": "PERSON",
+     "score": 0.825076
+    },
+    {
+     "text": "marie.curie@labo.fr) au",
+     "start": 23,
+     "end": 46,
+     "label": "EMAIL_ADDRESS",
+     "score": 0.924956
+    },
+    {
+     "text": "06 11 22 33",
+     "start": 47,
+     "end": 58,
+     "label": "DATE_TIME",
+     "score": 0.620996
+    }
+   ]
+  },
+  {
+   "text": "Jean-Luc Melenchon, 12 rue de la Paix, tel 06 12 34 56 78.",
+   "entities": [
+    {
+     "text": "Jean-Luc Melenchon",
+     "start": 0,
+     "end": 18,
+     "label": "PERSON",
+     "score": 0.988211
+    },
+    {
+     "text": "rue de la Paix",
+     "start": 23,
+     "end": 37,
+     "label": "LOCATION",
+     "score": 0.864173
+    },
+    {
+     "text": "tel",
+     "start": 39,
+     "end": 42,
+     "label": "ORGANIZATION",
+     "score": 0.761328
+    }
+   ]
+  },
+  {
+   "text": "Zoe Beranger a ecrit a zoe.b@mairie-saint-etienne.fr hier.",
+   "entities": [
+    {
+     "text": "Zoe Beranger",
+     "start": 0,
+     "end": 12,
+     "label": "PERSON",
+     "score": 0.920401
+    },
+    {
+     "text": "zoe.",
+     "start": 23,
+     "end": 27,
+     "label": "ORGANIZATION",
+     "score": 0.509035
+    },
+    {
+     "text": "b@mairie-saint",
+     "start": 27,
+     "end": 41,
+     "label": "EMAIL_ADDRESS",
+     "score": 0.684714
+    }
+   ]
+  },
+  {
+   "text": "Dr. Smith saw John Doe on 2024-03-15 at Mercy Hospital, London.",
+   "entities": [
+    {
+     "text": "Dr. Smith",
+     "start": 0,
+     "end": 9,
+     "label": "PERSON",
+     "score": 0.737561
+    },
+    {
+     "text": "John Doe",
+     "start": 14,
+     "end": 22,
+     "label": "PERSON",
+     "score": 0.996353
+    },
+    {
+     "text": "03",
+     "start": 31,
+     "end": 33,
+     "label": "DATE_TIME",
+     "score": 0.597103
+    },
+    {
+     "text": "Mercy Hospital,",
+     "start": 40,
+     "end": 55,
+     "label": "LOCATION",
+     "score": 0.761439
+    },
+    {
+     "text": "London",
+     "start": 56,
+     "end": 62,
+     "label": "LOCATION",
+     "score": 0.646466
+    }
+   ]
+  },
+  {
+   "text": "Ma carte 4111 1111 1111 1111 expire en 2027, IP 192.168.1.42.",
+   "entities": [
+    {
+     "text": "Ma carte",
+     "start": 0,
+     "end": 8,
+     "label": "ORGANIZATION",
+     "score": 0.528296
+    },
+    {
+     "text": "168.1.42",
+     "start": 52,
+     "end": 60,
+     "label": "IP_ADDRESS",
+     "score": 0.944765
+    }
+   ]
+  },
+  {
+   "text": "",
+   "entities": []
+  }
+ ]
+}

@@ -1,0 +1,7 @@
+web/vendor/
+web/model/
+web/pyodide/
+web/ort/
+web/ort131/
+*.whl
+node_modules/

@@ -1,0 +1,106 @@
+[
+ {
+  "id": "knowledgator/gliner-pii-edge-v1.0",
+  "engine": "gliner",
+  "weights": "onnx/model_quint8.onnx",
+  "dtype": "quint8",
+  "megabytes": 49,
+  "maxWidth": 12,
+  "spanMode": "token_level"
+ },
+ {
+  "id": "knowledgator/gliner-pii-small-v1.0",
+  "engine": "gliner",
+  "weights": "onnx/model_quint8.onnx",
+  "dtype": "quint8",
+  "megabytes": 86,
+  "maxWidth": 12,
+  "spanMode": "token_level"
+ },
+ {
+  "id": "onnx-community/gliner_small-v2.1",
+  "engine": "gliner",
+  "weights": "onnx/model_uint8.onnx",
+  "dtype": "uint8",
+  "megabytes": 192,
+  "maxWidth": 12,
+  "spanMode": "markerV0"
+ },
+ {
+  "id": "knowledgator/gliner-pii-base-v1.0",
+  "engine": "gliner",
+  "weights": "onnx/model_quint8.onnx",
+  "dtype": "quint8",
+  "megabytes": 205,
+  "maxWidth": 12,
+  "spanMode": "markerV0"
+ },
+ {
+  "id": "onnx-community/gliner_medium-v2.1",
+  "engine": "gliner",
+  "weights": "onnx/model_uint8.onnx",
+  "dtype": "uint8",
+  "megabytes": 264,
+  "maxWidth": 12,
+  "spanMode": "markerV0"
+ },
+ {
+  "id": "onnx-community/gliner_multi_pii-v1",
+  "engine": "gliner",
+  "weights": "onnx/model_uint8.onnx",
+  "dtype": "uint8",
+  "megabytes": 365,
+  "maxWidth": 12,
+  "spanMode": "markerV0"
+ },
+ {
+  "id": "knowledgator/gliner-pii-large-v1.0",
+  "engine": "gliner",
+  "weights": "onnx/model_quint8.onnx",
+  "dtype": "quint8",
+  "megabytes": 657,
+  "maxWidth": 100,
+  "spanMode": "token_level"
+ },
+ {
+  "id": "onnx-community/gliner_large-v2.1",
+  "engine": "gliner",
+  "weights": "onnx/model_uint8.onnx",
+  "dtype": "uint8",
+  "megabytes": 662,
+  "maxWidth": 12,
+  "spanMode": "markerV0"
+ },
+ {
+  "id": "onnx-community/bert-small-pii-detection-ONNX",
+  "engine": "transformers",
+  "weights": "onnx/model_uint8.onnx",
+  "dtype": "uint8",
+  "megabytes": 29,
+  "dtypeJs": "uint8"
+ },
+ {
+  "id": "Xenova/bert-base-NER",
+  "engine": "transformers",
+  "weights": "onnx/model_quantized.onnx",
+  "dtype": "quantized",
+  "megabytes": 110,
+  "dtypeJs": "q8"
+ },
+ {
+  "id": "onnx-community/multilang-pii-ner-ONNX",
+  "engine": "transformers",
+  "weights": "onnx/model_uint8.onnx",
+  "dtype": "uint8",
+  "megabytes": 296,
+  "dtypeJs": "uint8"
+ },
+ {
+  "id": "onnx-community/piiranha-v1-detect-personal-information-ONNX",
+  "engine": "transformers",
+  "weights": "onnx/model_uint8.onnx",
+  "dtype": "uint8",
+  "megabytes": 334,
+  "dtypeJs": "uint8"
+ }
+]

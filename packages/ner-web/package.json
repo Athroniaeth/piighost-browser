@@ -1,0 +1,28 @@
+{
+  "name": "@piighost/ner-web",
+  "version": "0.2.0",
+  "description": "Exécuteurs NER pour le navigateur, rendant des spans caractère prêts pour le BridgeDetector de piighost",
+  "type": "module",
+  "license": "MIT",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./gliner": "./src/gliner/index.js",
+    "./transformers": "./src/transformers/index.js"
+  },
+  "peerDependencies": {
+    "@huggingface/transformers": ">=4.0.0",
+    "onnxruntime-web": ">=1.30.0"
+  },
+  "peerDependenciesMeta": {
+    "@huggingface/transformers": { "optional": true },
+    "onnxruntime-web": { "optional": true }
+  },
+  "dependencies": {
+    "@huggingface/tokenizers": "^0.2.0"
+  },
+  "devDependencies": {
+    "@huggingface/transformers": "^4.3.0",
+    "onnxruntime-node": "^1.30.0"
+  }
+}

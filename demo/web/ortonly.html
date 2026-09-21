@@ -1,0 +1,25 @@
+<!doctype html><html><head><meta charset="utf-8"></head><body><pre id="log"></pre>
+<script type="module">
+import * as ort from "./ort/ort.wasm.bundle.min.mjs";
+const q = new URLSearchParams(location.search);
+const el = document.getElementById("log");
+const log = (m) => { el.textContent += m + "\n"; console.log(m); };
+window.__done = null;
+window.addEventListener("error", (e) => { log("WINDOW ERROR: " + e.message); window.__done = "err"; });
+window.addEventListener("unhandledrejection", (e) => { log("REJECTION: " + (e.reason?.stack || e.reason)); window.__done = "err"; });
+(async () => {
+  try {
+    ort.env.wasm.wasmPaths = location.origin + "/ort/";
+    ort.env.wasm.numThreads = Number(q.get("threads") || 1);
+    log(`ort ${ort.env.versions.web} threads=${ort.env.wasm.numThreads} COI=${globalThis.crossOriginIsolated}`);
+    log("fetch…");
+    const buf = await (await fetch("./model/model.onnx")).arrayBuffer();
+    log(`fetched ${(buf.byteLength/1e6).toFixed(0)} Mo`);
+    log("create session…");
+    const t = performance.now();
+    const s = await ort.InferenceSession.create(new Uint8Array(buf), { executionProviders: ["wasm"] });
+    log(`session ok en ${(performance.now()-t).toFixed(0)} ms | inputs ${s.inputNames.join(",")}`);
+    window.__done = "ok";
+  } catch (e) { log("FATAL " + (e.stack || e.message || e)); window.__done = "err"; }
+})();
+</script></body></html>

@@ -1,0 +1,30 @@
+[
+ {
+  "start": 17,
+  "end": 28,
+  "text": "Jean Dupont",
+  "label": "person",
+  "score": 0.449577
+ },
+ {
+  "start": 134,
+  "end": 161,
+  "text": "FR7630006000011234567890189",
+  "label": "iban",
+  "score": 0.474133
+ },
+ {
+  "start": 163,
+  "end": 174,
+  "text": "Jean Dupont",
+  "label": "person",
+  "score": 0.36143
+ },
+ {
+  "start": 190,
+  "end": 206,
+  "text": "Acme Corporation",
+  "label": "organization",
+  "score": 0.423251
+ }
+]

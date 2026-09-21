@@ -1,0 +1,79 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>piighost dans le navigateur</title></head>
+<body><pre id="log">démarrage…</pre>
+<script type="importmap">
+{ "imports": { "@huggingface/tokenizers": "./vendor/@huggingface/tokenizers/dist/tokenizers.mjs" } }
+</script>
+<script type="module">
+import * as ort from "./ort/ort.wasm.bundle.min.mjs";
+import { GlinerWeb } from "./vendor/ner-web/gliner/index.js";
+
+const q = new URLSearchParams(location.search);
+const THREADS = Number(q.get("threads") || 4);
+const el = document.getElementById("log");
+const log = (m) => { el.textContent += "\n" + m; console.log(m); };
+const now = () => performance.now();
+window.__done = null;
+  window.addEventListener("error", (e) => { log("WINDOW ERROR: " + (e.message || e)); window.__done = "err"; });
+  window.addEventListener("unhandledrejection", (e) => { log("REJECTION: " + (e.reason?.stack || e.reason)); window.__done = "err"; });
+
+const TEXT = "Bonjour, je suis Jean Dupont, j'habite 12 rue de la Paix à Lyon. "
+  + "Joignable au 06 12 34 56 78 ou jean.dupont@example.com. "
+  + "Mon IBAN est FR7630006000011234567890189. "
+  + "Jean-Luc Mélenchon travaille chez Acme Corporation.";
+
+(async () => {
+ try {
+  el.textContent = "";
+  ort.env.wasm.wasmPaths = location.origin + "/ort/";
+  ort.env.wasm.numThreads = THREADS;
+  log(`ort ${ort.env.versions.web} | threads demandés ${THREADS} | COI=${globalThis.crossOriginIsolated}`);
+
+  let t = now();
+  const [weights, tokJson, tokCfg] = await Promise.all([
+    fetch("./model/model.onnx").then((r) => r.arrayBuffer()),
+    fetch("./model/tokenizer.json").then((r) => r.json()),
+    fetch("./model/tokenizer_config.json").then((r) => r.json()),
+  ]);
+  log(`téléchargement modèle : ${(now() - t).toFixed(0)} ms (${(weights.byteLength / 1e6).toFixed(0)} Mo)`);
+
+  t = now();
+  const gliner = await GlinerWeb.load({
+    model: new Uint8Array(weights), tokenizerJson: tokJson, tokenizerConfig: tokCfg, ort,
+    sessionOptions: { executionProviders: ["wasm"], graphOptimizationLevel: "all" },
+  });
+  log(`session GLiNER : ${(now() - t).toFixed(0)} ms | mode ${gliner.mode} | threads effectifs ${ort.env.wasm.numThreads}`);
+
+  window.glinerInfer = async (text, labels, threshold) => {
+    const list = labels.toJs ? labels.toJs() : Array.from(labels);
+    return gliner.extract(text, list, { threshold, flat: true });
+  };
+
+  await gliner.extract(TEXT, ["person"], { threshold: 0.3 });
+  const runs = [];
+  for (let i = 0; i < 5; i++) {
+    const a = now();
+    await gliner.extract(TEXT, ["person", "location", "organization"], { threshold: 0.35 });
+    runs.push(now() - a);
+  }
+  runs.sort((x, y) => x - y);
+  log(`inférence x5 (${TEXT.length} car., 3 libellés) : médiane ${runs[2].toFixed(0)} ms [${runs.map((x) => x.toFixed(0)).join(", ")}]`);
+
+  t = now();
+  const { loadPyodide } = await import("./pyodide/pyodide.mjs");
+  const py = await loadPyodide({ indexURL: "./pyodide/" });
+  log(`démarrage Pyodide : ${(now() - t).toFixed(0)} ms`);
+
+  t = now();
+  await py.loadPackage("micropip");
+  await py.runPythonAsync(`import micropip; await micropip.install("${location.origin}/piighost-1.8.0-py3-none-any.whl")`);
+  log(`installation piighost : ${(now() - t).toFixed(0)} ms`);
+
+  py.globals.set("TEXT", TEXT);
+
+  t = now();
+  const out = await py.runPythonAsync(await (await fetch("./pipeline.py")).text());
+  log(`\n=== pipeline PIIGhost via le pont (${(now() - t).toFixed(0)} ms) ===\n${out}`);
+  window.__done = "ok";
+ } catch (e) { log("FATAL: " + (e.stack || e.message || e)); window.__done = "err"; }
+})();
+</script></body></html>
