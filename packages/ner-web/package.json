@@ -1,14 +1,37 @@
 {
   "name": "@piighost/ner-web",
   "version": "0.2.0",
-  "description": "Exécuteurs NER pour le navigateur, rendant des spans caractère prêts pour le BridgeDetector de piighost",
-  "type": "module",
+  "description": "Browser NER runners that return character spans, ready for piighost's BridgeDetector",
+  "keywords": [
+    "ner",
+    "pii",
+    "gliner",
+    "onnx",
+    "onnxruntime-web",
+    "transformers.js",
+    "browser",
+    "wasm",
+    "piighost"
+  ],
+  "homepage": "https://github.com/Athroniaeth/piighost-browser#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Athroniaeth/piighost-browser.git",
+    "directory": "packages/ner-web"
+  },
   "license": "MIT",
+  "type": "module",
   "main": "./src/index.js",
   "exports": {
     ".": "./src/index.js",
     "./gliner": "./src/gliner/index.js",
     "./transformers": "./src/transformers/index.js"
+  },
+  "files": [
+    "src"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
   "peerDependencies": {
     "@huggingface/transformers": ">=4.0.0",
