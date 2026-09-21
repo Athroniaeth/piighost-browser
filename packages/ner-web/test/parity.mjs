@@ -1,9 +1,9 @@
 /**
- * Test de parité : le portage JS doit reproduire le décodeur GLiNER Python.
+ * Parity test: the JavaScript port must reproduce the Python GLiNER decoder.
  *
- * La référence est produite par ref/make_gold.py sur le même fichier ONNX.
- * Toute divergence de span est une fuite potentielle, donc les spans sont
- * comparés strictement et seuls les scores tolèrent un écart numérique.
+ * The reference comes from ref/make_gold.py on the same ONNX file. Any span
+ * divergence is a potential leak, so spans are compared strictly and only the
+ * scores tolerate a numerical deviation.
  */
 import * as ort from "onnxruntime-node";
 import fs from "node:fs";
@@ -32,9 +32,9 @@ for (const { text, entities: want } of gold.cases) {
 
   if (got.length !== want.length) {
     failures++;
-    console.log(`FAIL ${label}\n  nombre d'entités : attendu ${want.length}, obtenu ${got.length}`);
-    console.log(`  attendu : ${want.map((e) => `${e.label}[${e.start},${e.end}]`).join(" ")}`);
-    console.log(`  obtenu  : ${got.map((e) => `${e.label}[${e.start},${e.end}]`).join(" ")}`);
+    console.log(`FAIL ${label}\n  nombre d'entités : expected ${want.length}, got ${got.length}`);
+    console.log(`  expected : ${want.map((e) => `${e.label}[${e.start},${e.end}]`).join(" ")}`);
+    console.log(`  got  : ${got.map((e) => `${e.label}[${e.start},${e.end}]`).join(" ")}`);
     continue;
   }
 
@@ -45,8 +45,8 @@ for (const { text, entities: want } of gold.cases) {
     if (delta > maxDelta) maxDelta = delta;
     if (a.start !== b.start || a.end !== b.end || a.label !== b.label || a.text !== b.text) {
       failures++;
-      console.log(`FAIL ${label}\n  attendu ${a.label} ${JSON.stringify(a.text)} [${a.start},${a.end}]`);
-      console.log(`  obtenu  ${b.label} ${JSON.stringify(b.text)} [${b.start},${b.end}]`);
+      console.log(`FAIL ${label}\n  expected ${a.label} ${JSON.stringify(a.text)} [${a.start},${a.end}]`);
+      console.log(`  got  ${b.label} ${JSON.stringify(b.text)} [${b.start},${b.end}]`);
     } else if (delta > TOLERANCE) {
       failures++;
       console.log(`FAIL ${label}\n  score ${a.label} [${a.start},${a.end}] : ${a.score} vs ${b.score} (écart ${delta.toExponential(2)})`);
@@ -54,6 +54,6 @@ for (const { text, entities: want } of gold.cases) {
   }
 }
 
-console.log(`\n${REPO.split("/").pop()} | ${cases} cas, ${entities} entités comparées, écart de score max ${maxDelta.toExponential(2)}`);
-console.log(failures === 0 ? "PARITÉ OK" : `${failures} DIVERGENCES`);
+console.log(`\n${REPO.split("/").pop()} | ${cases} cases, ${entities} entities compared, max score deviation ${maxDelta.toExponential(2)}`);
+console.log(failures === 0 ? "PARITY OK" : `${failures} DIVERGENCES`);
 process.exit(failures === 0 ? 0 : 1);

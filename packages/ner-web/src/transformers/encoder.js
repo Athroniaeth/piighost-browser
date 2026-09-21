@@ -1,39 +1,37 @@
 /**
- * Découpage en unités et encodage, pour récupérer les décalages que
- * transformers.js ne donne pas.
+ * Splitting into units and encoding, to recover the offsets transformers.js
+ * does not provide.
  *
- * Le pipeline token-classification de transformers.js ne rend ni start ni end,
- * et son tokeniseur n'accepte pas return_offsets_mapping : le champ est un TODO
- * ouvert depuis deux ans. Reconstruire les positions en recollant les morceaux
- * de sous-tokens serait heuristique, et casserait sur les accents et les
- * caractères hors vocabulaire, c'est-à-dire exactement là où un span faux
- * laisse fuir une valeur.
+ * Its token-classification pipeline returns neither start nor end, and its
+ * tokenizer does not accept return_offsets_mapping: the field is a TODO open
+ * for two years. Rebuilding the positions by gluing sub-token pieces back
+ * together would be heuristic, and would break on accents and out-of-vocabulary
+ * characters, which is exactly where a wrong span leaks a value.
  *
- * On prend donc l'autre chemin : découper d'abord en unités qui portent leurs
- * positions, puis encoder chaque unité séparément. Recoller ces encodages donne
- * la même séquence d'identifiants que l'encodage du texte entier, et l'on sait
- * en prime quel sous-token appartient à quelle unité.
+ * So the other path is taken: split first into units that carry their
+ * positions, then encode each unit separately. Concatenating those encodings
+ * gives the same id sequence as encoding the whole text, and every sub-token is
+ * traced back to its unit.
  *
- * Les unités doivent être celles du modèle, pas les nôtres. Le pré-tokeniseur
- * déclaré dans tokenizer.json est donc interrogé : pour un modèle BERT il rend
- * Jean, -, Luc là où un découpage par mots rendrait Jean-Luc, et grouper au
- * mauvais grain décale les spans. Quand il est inatteignable ou que ses
- * morceaux ne s'alignent pas sur le texte, on retombe sur le découpage par
- * mots, qui reste correct pour les tokeniseurs qui n'isolent pas la
- * ponctuation.
+ * The units have to be the model's, not ours. The pre-tokenizer declared in
+ * tokenizer.json is therefore asked: for a BERT model it returns Jean, -, Luc
+ * where a word split would return Jean-Luc, and grouping at the wrong
+ * granularity shifts the spans. When it is unreachable, or when its pieces do
+ * not align onto the text, the word splitter takes over, which stays correct
+ * for tokenizers that do not isolate punctuation.
  */
 
 import { splitWords } from "../splitter.js";
 
-/** Préfixes que certains pré-tokeniseurs ajoutent pour marquer l'espace. */
+/** Prefixes some pre-tokenizers add to mark a leading space. */
 const MARKERS = /^[Ġ▁]/;
 
 /**
- * Rend les identifiants d'un texte, quelle que soit la bibliothèque.
+ * Return a text's ids, whichever library is in use.
  *
- * transformers.js rend un tableau, @huggingface/tokenizers rend un objet
- * portant un champ ids. Les deux sont acceptés pour que l'encodeur serve les
- * deux moteurs sans adaptateur à l'appel.
+ * transformers.js returns an array, @huggingface/tokenizers returns an object
+ * carrying an ids field. Both are accepted so the encoder serves both engines
+ * without an adapter at the call site.
  *
  * @param {any} tokenizer
  * @param {string} text
@@ -45,12 +43,12 @@ function encodeIds(tokenizer, text) {
 }
 
 /**
- * Découpe le texte avec le pré-tokeniseur du modèle, positions comprises.
+ * Split the text with the model's pre-tokenizer, positions included.
  *
- * Les morceaux rendus sont des sous-chaînes du texte, alors on les y retrouve
- * par un balayage vers l'avant. Un morceau introuvable signale un
- * pré-tokeniseur qui transforme au lieu de découper, et l'appelant retombe
- * alors sur le découpage par mots.
+ * The pieces it returns are substrings of the text, so they are found by
+ * scanning forward. A piece that cannot be found signals a pre-tokenizer that
+ * transforms rather than splits, and the caller then falls back to the word
+ * splitter.
  *
  * @param {string} text
  * @param {any} tokenizer
@@ -84,18 +82,17 @@ export function preTokenUnits(text, tokenizer) {
 
 /**
  * @typedef {object} Encoded
- * @property {number[]} ids Identifiants de la séquence complète.
- * @property {number[]} firstTokenOfUnit Index du premier sous-token de chaque
- *   unité, ou -1 quand l'unité n'a produit aucun token.
- * @property {import("../splitter.js").Word[]} units Les unités et leurs positions.
+ * @property {number[]} ids Ids of the whole sequence.
+ * @property {number[]} firstTokenOfUnit Index of each unit's first sub-token,
+ *   or -1 when the unit produced no token.
+ * @property {import("../splitter.js").Word[]} units The units and their positions.
  */
 
 /**
- * Mesure ce que le post-processeur du tokeniseur ajoute autour d'un texte.
+ * Measure what the tokenizer's post-processor wraps a text with.
  *
- * On ne peut pas supposer un token de chaque côté : selon le modèle il peut n'y
- * en avoir aucun, ou plusieurs. On mesure une fois plutôt que de couper à
- * l'aveugle.
+ * One token on each side cannot be assumed: depending on the model there may be
+ * none, or several. It is measured once rather than trimmed blindly.
  *
  * @param {any} tokenizer
  * @returns {{prefix: number, suffix: number, opening: number[], closing: number[]}}
@@ -115,7 +112,7 @@ export function measureWrapping(tokenizer) {
 }
 
 /**
- * Encode un texte unité par unité, en gardant la trace des unités.
+ * Encode a text unit by unit, keeping track of the units.
  *
  * @param {string} text
  * @param {any} tokenizer

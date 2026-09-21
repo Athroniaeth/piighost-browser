@@ -31,8 +31,8 @@
 
   engine.start();
 
-  // La carte des couleurs est construite sur toutes les détections, écartées
-  // comprises : masquer une entité ne doit pas redistribuer les teintes.
+  // The colour map is built from every detection, dropped ones included:
+  // hiding an entity must not reshuffle the hues.
   const colors = $derived(
     assignLabelColors((analysis?.hits ?? []).map((hit) => hit.label)),
   );
@@ -42,13 +42,13 @@
     engine.total > 0 ? Math.round((engine.done / engine.total) * 100) : 0,
   );
 
-  /** Trouve l'entité retenue qui a pris la place d'une détection écartée. */
+  /** Find the kept entity that took a dropped detection's place. */
   function winner(start: number, end: number): string {
     const over = kept.find((hit) => hit.start < end && start < hit.end);
     return over ? over.label : "";
   }
 
-  /** L'entrée choisie, ou celle saisie à la main. */
+  /** The chosen entry, or the hand-typed one. */
   function chosen(): ModelEntry {
     if (picked !== "custom") {
       return CATALOG.find((entry) => entry.id === picked) ?? CATALOG[0];

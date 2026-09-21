@@ -1,10 +1,10 @@
 /**
- * Construction des entrées du graphe ONNX.
+ * Building the ONNX graph inputs.
  *
- * GLiNER voit une seule séquence : une invite qui énumère les libellés
- * demandés, puis le texte. Chaque mot est encodé séparément pour que
- * `words_mask` puisse pointer le premier sous-token de chaque mot, ce que le
- * modèle utilise pour ramener les sous-tokens à des mots.
+ * GLiNER sees one sequence: a prompt listing the requested labels, then the
+ * text. Each word is encoded separately so `words_mask` can point at the first
+ * sub-token of every word, which the model uses to pool sub-tokens back into
+ * words.
  */
 
 import { splitWords } from "../splitter.js";
@@ -13,11 +13,11 @@ const ENT_TOKEN = "<<ENT>>";
 const SEP_TOKEN = "<<SEP>>";
 
 /**
- * Mesure ce que le post-processeur du tokeniseur ajoute autour d'un texte.
+ * Measure what the tokenizer's post-processor wraps a text with.
  *
- * On ne peut pas supposer un token de chaque côté : selon le modèle le
- * post-processeur peut n'en ajouter aucun, ou plusieurs. On mesure donc une
- * fois sur la chaîne vide plutôt que de découper à l'aveugle.
+ * One token on each side cannot be assumed: depending on the model the
+ * post-processor may add none, or several. So it is measured once on the empty
+ * string rather than trimmed blindly.
  *
  * @param {{encode: (text: string) => {ids: number[]}}} tokenizer
  * @returns {{prefix: number, suffix: number, cls: number, sep: number}}
@@ -25,13 +25,13 @@ const SEP_TOKEN = "<<SEP>>";
 export function measureSpecialTokens(tokenizer) {
   const empty = tokenizer.encode("").ids;
   const probe = tokenizer.encode("a").ids;
-  // Ce que l'encodage de la chaîne vide contient est exactement l'enrobage.
+  // Whatever encoding the empty string yields is exactly the wrapping.
   const prefix = empty.length === 0 ? 0 : 1;
   const suffix = empty.length >= 2 ? empty.length - prefix : 0;
   if (probe.length <= prefix + suffix) {
     throw new Error(
-      "Le tokeniseur n'a produit aucun token pour un mot non vide ; " +
-        "l'enrobage détecté est incohérent.",
+      "The tokenizer produced no token for a non-empty word, so the " +
+        "wrapping detected above is inconsistent.",
     );
   }
   return {
@@ -51,13 +51,13 @@ export function measureSpecialTokens(tokenizer) {
  */
 
 /**
- * Encode un texte et sa liste de libellés en une séquence prête pour le modèle.
+ * Encode a text and its labels into a sequence the model can take.
  *
- * `wordsMask` vaut 0 sur l'invite et sur les sous-tokens de continuation, et
- * porte l'indice du mot, numéroté à partir de 1, sur son premier sous-token.
+ * `wordsMask` is 0 over the prompt and over continuation sub-tokens, and holds
+ * the word index, numbered from 1, on that word's first sub-token.
  *
- * @param {string} text Le texte à analyser.
- * @param {string[]} labels Les libellés interrogés, dans l'ordre.
+ * @param {string} text The text to scan.
+ * @param {string[]} labels The labels queried, in order.
  * @param {{encode: (text: string) => {ids: number[]}}} tokenizer
  * @param {{prefix: number, suffix: number, cls: number, sep: number}} special
  * @returns {Encoded}
@@ -107,13 +107,13 @@ export function encode(text, labels, tokenizer, special) {
 }
 
 /**
- * Énumère les spans candidats pour un modèle span-level.
+ * Enumerate the candidate spans for a span-level model.
  *
- * Un span est une paire d'indices de mots. Le masque écarte ceux qui
- * dépasseraient la fin du texte, que le modèle ne doit pas noter.
+ * A span is a pair of word indices. The mask drops those that would run past
+ * the end of the text, which the model must not score.
  *
- * @param {number} wordCount Nombre de mots du texte.
- * @param {number} maxWidth Largeur maximale d'un span, en mots.
+ * @param {number} wordCount Number of words in the text.
+ * @param {number} maxWidth Maximum span width, in words.
  * @returns {{spanIdx: number[][], spanMask: boolean[]}}
  */
 export function buildSpans(wordCount, maxWidth) {

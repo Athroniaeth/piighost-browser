@@ -1,4 +1,4 @@
-"""Reference Python pour un modele GLiNER span-level, pour tester l'autre chemin."""
+"""Python reference for a span-level GLiNER model, to exercise the other path."""
 import json
 
 from gliner import GLiNER

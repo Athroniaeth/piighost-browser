@@ -1,9 +1,12 @@
-"""Reference Python du pipeline token-classification, sur le MEME fichier ONNX.
+"""Python reference of the token-classification pipeline, offsets included.
 
-Comparer le portage JS a un modele PyTorch different serait sans valeur : le
-depot ONNX et le depot PyTorch de ce modele n'ont meme pas le meme nombre de
-libelles. optimum charge donc l'export ONNX dans le vrai pipeline HuggingFace,
-et les deux cotes executent les memes poids.
+Offsets exist on the Python side through return_offsets_mapping. Only the
+JavaScript stack lacks them, so this serves as ground truth for the port.
+
+optimum loads the ONNX export into the real HuggingFace pipeline so both sides
+run identical weights. Comparing against the PyTorch repository would be
+meaningless: for this model the two do not even declare the same number of
+labels.
 """
 import json
 

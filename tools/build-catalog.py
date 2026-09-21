@@ -1,8 +1,8 @@
-"""Construit le catalogue de modeles a partir du Hub, tailles reelles comprises.
+"""Build the model catalogue from the Hub, measured sizes included.
 
-Ecrire les tailles a la main, c'est les voir diverger. Le script interroge
-l'API, verifie que les fichiers annonces existent vraiment, et refuse une
-entree incomplete plutot que de la laisser casser dans l'interface.
+Writing sizes by hand is writing sizes that drift. This queries the API, checks
+that the announced files really exist, and refuses an incomplete entry rather
+than letting it break the interface.
 """
 
 import json
@@ -10,7 +10,7 @@ import sys
 import urllib.request
 
 CANDIDATES = [
-    # (id, moteur, fichier ONNX prefere, ordre de repli)
+    # (id, engine, preferred ONNX file, fallback order)
     ("knowledgator/gliner-pii-edge-v1.0", "gliner", ["onnx/model_quint8.onnx"]),
     ("knowledgator/gliner-pii-small-v1.0", "gliner", ["onnx/model_quint8.onnx"]),
     ("knowledgator/gliner-pii-base-v1.0", "gliner", ["onnx/model_quint8.onnx"]),
@@ -26,8 +26,8 @@ CANDIDATES = [
     ("protectai/lakshyakh93-deberta_finetuned_pii-onnx", "transformers", ["onnx/model.onnx"]),
 ]
 
-# transformers.js ne nomme pas les fichiers, il les deduit d'un dtype. La
-# correspondance est celle de sa table de suffixes.
+# transformers.js does not name files, it infers them from a dtype. This map
+# mirrors its suffix table.
 DTYPE_JS = {
     "onnx/model_uint8.onnx": "uint8",
     "onnx/model_quint8.onnx": "uint8",
@@ -46,25 +46,25 @@ DTYPE_OF = {
 
 
 def fetch_json(url: str) -> dict:
-    """Lit une reponse JSON de l'API du Hub."""
+    """Read a JSON response from the Hub API."""
     with urllib.request.urlopen(url, timeout=30) as answer:  # noqa: S310
         return json.load(answer)
 
 
 def build() -> list[dict]:
-    """Rend une entree par modele reellement utilisable."""
+    """Return one entry per model that is actually usable."""
     entries = []
     for model_id, engine, preferred in CANDIDATES:
         try:
             info = fetch_json(f"https://huggingface.co/api/models/{model_id}?blobs=true")
         except Exception as exc:  # noqa: BLE001
-            print(f"  ignore {model_id}: {exc}", file=sys.stderr)
+            print(f"  skipped {model_id}: {exc}", file=sys.stderr)
             continue
 
         sizes = {f["rfilename"]: f.get("size") or 0 for f in info.get("siblings", [])}
         weights = next((name for name in preferred if sizes.get(name)), None)
         if weights is None:
-            print(f"  ignore {model_id}: aucun poids parmi {preferred}", file=sys.stderr)
+            print(f"  skipped {model_id}: no weights among {preferred}", file=sys.stderr)
             continue
 
         required = ["tokenizer.json", "tokenizer_config.json"]
@@ -74,7 +74,7 @@ def build() -> list[dict]:
             required.append("config.json")
         missing = [name for name in required if name not in sizes]
         if missing:
-            print(f"  ignore {model_id}: manque {missing}", file=sys.stderr)
+            print(f"  skipped {model_id}: missing {missing}", file=sys.stderr)
             continue
 
         extra = sum(sizes.get(name, 0) for name in required)
@@ -103,4 +103,4 @@ if __name__ == "__main__":
     catalog.sort(key=lambda entry: (entry["engine"], entry["megabytes"]))
     with open("app/src/lib/catalog.json", "w") as handle:
         json.dump(catalog, handle, ensure_ascii=False, indent=1)
-    print(f"\n{len(catalog)} modeles retenus", file=sys.stderr)
+    print(f"\n{len(catalog)} models kept", file=sys.stderr)

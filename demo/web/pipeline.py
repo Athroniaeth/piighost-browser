@@ -1,8 +1,11 @@
-"""Le pipeline PIIGhost tel qu'il tourne dans le navigateur.
+"""The piighost pipeline as it runs in the browser.
 
-Les règles gardent ce qui a une forme fixe, le modèle prend le reste. C'est ce
-partage qui rend un petit modèle suffisant : il n'a plus à reconnaître ni un
-courriel ni un IBAN, seulement des noms, des lieux et des organisations.
+The rules keep what has a fixed shape and the model takes the rest. That split
+is what makes a small model enough: it no longer has to recognise an email or
+an IBAN, only names, places and organisations.
+
+This is the original prototype, kept for raw measurements. The interface in
+app/ supersedes it.
 """
 
 import js

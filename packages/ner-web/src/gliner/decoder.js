@@ -1,28 +1,28 @@
 /**
- * Décodage des logits en entités portant des décalages caractère.
+ * Decoding logits into entities carrying character offsets.
  *
- * Les deux architectures GLiNER ont des dispositions de sortie différentes, et
- * s'y tromper ne lève aucune erreur : le modèle rend simplement des scores
- * incohérents. Les dispositions sont donc écrites ici explicitement.
+ * The two GLiNER architectures have different output layouts, and getting one
+ * wrong raises nothing: the model simply returns incoherent scores. Both are
+ * therefore spelled out here.
  *
- *   token-level : [batch, mots, classes, 3], la dernière dimension portant
- *                 (début, fin, intérieur)
- *   span-level  : [batch, mots, largeur_max, classes]
+ *   token-level: [batch, words, classes, 3], the last dimension holding
+ *                (start, end, inside)
+ *   span-level:  [batch, words, max_width, classes]
  */
 
 const sigmoid = (x) => 1 / (1 + Math.exp(-x));
 
 /**
  * @typedef {object} Entity
- * @property {string} text  Le texte exact de l'entité, tranché dans la source.
- * @property {number} start Décalage de début, inclusif.
- * @property {number} end   Décalage de fin, exclusif.
- * @property {string} label Le libellé retenu.
- * @property {number} score Confiance, dans [0, 1].
+ * @property {string} text  The entity text, sliced from the source.
+ * @property {number} start Start offset, inclusive.
+ * @property {number} end   End offset, exclusive.
+ * @property {string} label The label kept.
+ * @property {number} score Confidence, in [0, 1].
  */
 
 /**
- * Deux spans se recouvrent-ils, au sens des indices de mots ?
+ * Do two spans overlap?
  *
  * @param {Entity} a
  * @param {Entity} b
@@ -33,7 +33,7 @@ function overlaps(a, b) {
 }
 
 /**
- * Un span est-il entièrement contenu dans l'autre ?
+ * Is one span entirely contained in the other?
  *
  * @param {Entity} a
  * @param {Entity} b
@@ -44,14 +44,14 @@ function nested(a, b) {
 }
 
 /**
- * Retient les entités les plus sûres et écarte celles qui les recouvrent.
+ * Keep the most confident entities and drop those that overlap them.
  *
- * En mode plat, tout recouvrement est éliminé. Sinon, seuls les recouvrements
- * partiels le sont, une entité imbriquée restant admissible.
+ * In flat mode every overlap is removed. Otherwise only partial overlaps are,
+ * so a nested entity stays admissible.
  *
  * @param {Entity[]} entities
  * @param {boolean} flat
- * @returns {Entity[]} Les entités retenues, triées par position.
+ * @returns {Entity[]} The entities kept, sorted by position.
  */
 export function greedySelect(entities, flat) {
   const conflicts = flat ? overlaps : (a, b) => overlaps(a, b) && !nested(a, b);
@@ -66,12 +66,12 @@ export function greedySelect(entities, flat) {
 }
 
 /**
- * Décode la sortie d'un modèle token-level.
+ * Decode a token-level model's output.
  *
- * Reproduit le décodeur BIO du GLiNER de référence : on retient les positions
- * de début et de fin au-dessus du seuil, on les apparie à classe égale, on
- * exige que tout l'intérieur du span soit lui aussi au-dessus du seuil, et le
- * score du span est le minimum de tous ces scores.
+ * Reproduces the reference GLiNER BIO decoder: keep the start and end
+ * positions above the threshold, pair them at equal class, require the whole
+ * inside of the span to be above the threshold too, and take the span score as
+ * the minimum of all those scores.
  *
  * @param {Float32Array|number[]} logits
  * @param {import("../splitter.js").Word[]} words
@@ -121,7 +121,7 @@ export function decodeTokenLevel(logits, words, labels, text, threshold, flat) {
 }
 
 /**
- * Décode la sortie d'un modèle span-level.
+ * Decode a span-level model's output.
  *
  * @param {Float32Array|number[]} logits
  * @param {import("../splitter.js").Word[]} words

@@ -1,3 +1,5 @@
+"""Dump the tokens, offsets and word ids Python sees, to locate a mismatch."""
+
 import json
 from transformers import AutoTokenizer, pipeline
 

@@ -1,9 +1,9 @@
 /**
- * L'exécuteur : assemble tokeniseur, processeur, session ONNX et décodeur.
+ * The runner: tokenizer, processor, ONNX session and decoder, assembled.
  *
- * ONNX Runtime est injecté plutôt qu'importé, pour que l'appelant choisisse sa
- * variante de build. Empaqueter ORT dans un bundle applicatif casse son chemin
- * de création des workers, donc il doit venir de sa propre distribution.
+ * ONNX Runtime is injected rather than imported, so the caller picks its build
+ * variant. Bundling ORT into an application bundle breaks its worker creation
+ * path, so it has to come from its own distribution.
  */
 
 import { Tokenizer } from "@huggingface/tokenizers";
@@ -15,10 +15,10 @@ const TOKEN_LEVEL = "token_level";
 const SPAN_LEVEL = "span_level";
 
 /**
- * Détecte l'architecture à partir des entrées réellement déclarées par le graphe.
+ * Detect the architecture from the inputs the graph actually declares.
  *
- * La configuration du dépôt annonce un `span_mode`, mais c'est le graphe qui
- * fait foi : un modèle span-level réclame `span_idx`, un token-level non.
+ * The repository config announces a `span_mode`, but the graph is what counts:
+ * a span-level model asks for `span_idx`, a token-level one does not.
  *
  * @param {string[]} inputNames
  * @returns {string}
@@ -45,15 +45,15 @@ export class GlinerWeb {
   }
 
   /**
-   * Charge un modèle et son tokeniseur.
+   * Load a model and its tokenizer.
    *
    * @param {object} options
-   * @param {ArrayBuffer|Uint8Array|string} options.model Poids ONNX, ou leur URL.
-   * @param {object} options.tokenizerJson Contenu de tokenizer.json.
-   * @param {object} options.tokenizerConfig Contenu de tokenizer_config.json.
-   * @param {any} options.ort Le module onnxruntime-web à utiliser.
-   * @param {number} [options.maxWidth] Largeur maximale d'un span, en mots.
-   * @param {object} [options.sessionOptions] Options passées à la session ONNX.
+   * @param {ArrayBuffer|Uint8Array|string} options.model ONNX weights, or their URL.
+   * @param {object} options.tokenizerJson Contents of tokenizer.json.
+   * @param {object} options.tokenizerConfig Contents of tokenizer_config.json.
+   * @param {any} options.ort The onnxruntime-web module to use.
+   * @param {number} [options.maxWidth] Maximum span width, in words.
+   * @param {object} [options.sessionOptions] Options passed to the ONNX session.
    * @returns {Promise<GlinerWeb>}
    */
   static async load({
@@ -70,13 +70,13 @@ export class GlinerWeb {
   }
 
   /**
-   * Extrait les entités d'un texte.
+   * Extract the entities of a text.
    *
-   * @param {string} text Le texte à analyser.
-   * @param {string[]} labels Les libellés interrogés.
+   * @param {string} text The text to scan.
+   * @param {string[]} labels The labels queried.
    * @param {object} [options]
-   * @param {number} [options.threshold] Seuil de confiance, dans [0, 1].
-   * @param {boolean} [options.flat] Interdire tout recouvrement entre entités.
+   * @param {number} [options.threshold] Confidence threshold, in [0, 1].
+   * @param {boolean} [options.flat] Forbid any overlap between entities.
    * @returns {Promise<import("./decoder.js").Entity[]>}
    */
   async extract(text, labels, { threshold = 0.5, flat = true } = {}) {

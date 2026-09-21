@@ -1,4 +1,4 @@
-"""Genere la reference Python pour le test de parite du portage JS."""
+"""Generate the Python reference for the JavaScript port's parity test."""
 import json
 
 from gliner import GLiNER

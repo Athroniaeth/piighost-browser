@@ -1,15 +1,15 @@
 /**
- * Un texte plus long que la fenêtre du modèle ne doit pas perdre sa fin.
+ * A text longer than the model's window must not lose its tail.
  *
- * Un encodeur a un nombre fini de positions. Les dépasser doit soit échouer,
- * et l'appelant découpe alors le texte, soit analyser quand même jusqu'au bout.
- * Ce qui est interdit est la troisième issue : réussir en n'ayant lu qu'un
- * préfixe, ce qui laisse les PII de la fin en clair sans rien signaler.
+ * An encoder has a finite number of positions. Overflowing them must either
+ * fail, and the caller then chunks the text, or still read through to the end.
+ * The forbidden third outcome is succeeding on a prefix alone, which leaves the
+ * PII at the end in clear with nothing to signal it.
  *
- * Le repère est une entité placée au tout dernier caractère du texte. Si
- * l'exécuteur rend un résultat sans elle, il a tronqué en silence.
+ * The marker is an entity placed at the very last character. A runner that
+ * returns a result without it has truncated silently.
  *
- * Ce cas manquait au jeu de parité, et le défaut est parti en production.
+ * This case was missing from the parity set, and the defect reached production.
  */
 import * as ort from "onnxruntime-node";
 import fs from "node:fs";
@@ -28,7 +28,7 @@ const GLINER_LABELS = ["person", "location", "phone number"];
 let failures = 0;
 
 /**
- * Analyse un texte, en distinguant un refus d'un résultat.
+ * Scan a text, telling a refusal apart from a result.
  *
  * @returns {Promise<{refused: true} | {entities: object[]}>}
  */
@@ -40,30 +40,30 @@ async function attempt(runner, text, labels) {
   }
 }
 
-/** Vérifie qu'un exécuteur lit un texte court, puis qu'il ne tronque pas. */
+/** Check a runner reads a short text, then that it does not truncate. */
 async function check(name, runner, labels, repeats) {
   const short = await attempt(runner, `${FILLER}${MARKER}.`, labels);
   if (short.refused || short.entities.length === 0) {
     failures++;
-    console.log(`FAIL ${name} : un texte court doit produire des entités`);
+    console.log(`FAIL ${name}: a short text must produce entities`);
     return;
   }
-  console.log(`  ${name} : texte court, ${short.entities.length} entités`);
+  console.log(`  ${name}: short text, ${short.entities.length} entities`);
 
   const text = `${FILLER.repeat(repeats)}${MARKER}.`;
   const long = await attempt(runner, text, labels);
   if (long.refused) {
-    console.log(`  ${name} : ${text.length} caractères refusés, à l'appelant de découper`);
+    console.log(`  ${name}: ${text.length} characters refused, the caller must chunk`);
     return;
   }
   const tail = long.entities.some((entity) => entity.start > text.length - MARKER.length - 4);
   if (tail) {
-    console.log(`  ${name} : ${text.length} caractères analysés jusqu'à la fin`);
+    console.log(`  ${name}: ${text.length} characters read to the end`);
   } else {
     failures++;
     console.log(
-      `FAIL ${name} : ${text.length} caractères ont rendu ${long.entities.length} entités, ` +
-        "mais aucune dans la fin du texte, donc elle a été tronquée en silence",
+      `FAIL ${name}: ${text.length} characters returned ${long.entities.length} entities, ` +
+        "but none in the tail, so it was silently truncated",
     );
   }
 }
@@ -81,8 +81,8 @@ const transformers = await TransformersNer.load({
   model: "onnx-community/bert-small-pii-detection-ONNX",
   dtype: "fp32",
 });
-// Un modèle de token-classification impose ses libellés, on les garde tous.
+// A token-classification model imposes its labels, so keep them all.
 await check("transformers", transformers, [], 200);
 
-console.log(failures === 0 ? "\nFENÊTRE OK" : `\n${failures} DÉFAUTS`);
+console.log(failures === 0 ? "\nWINDOW OK" : `\n${failures} DEFECTS`);
 process.exit(failures === 0 ? 0 : 1);

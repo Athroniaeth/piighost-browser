@@ -1,8 +1,8 @@
-"""Reference Python sur des textes longs, le trou du jeu de parite initial.
+"""Python reference on long texts, the gap in the original parity set.
 
-Un encodeur a une fenetre de positions finie et la depasser fait echouer
-l'inference. Le jeu court ne montait pas assez haut pour l'atteindre, donc le
-portage JS a pu partir en production avec ce defaut.
+An encoder has a finite position window and overflowing it fails the inference.
+The short set never reached high enough to hit it, so the JavaScript port shipped
+with that defect.
 """
 import json
 

@@ -1,16 +1,16 @@
-"""Le pipeline PIIGhost tel qu'il tourne dans le navigateur.
+"""The piighost pipeline as it runs in the browser.
 
-Les règles gardent ce qui a une forme fixe, le modèle prend le reste. C'est ce
-partage qui rend un petit modèle suffisant : il n'a plus à reconnaître ni un
-courriel ni un IBAN, seulement ce qui n'a pas de forme.
+The rules keep what has a fixed shape and the model takes the rest. That split
+is what makes a small model enough: it no longer has to recognise an email or
+an IBAN, only what has no shape at all.
 
-Le détecteur qui parle au modèle est le BridgeDetector de piighost, pas une
-classe locale : c'est la bibliothèque elle-même qui sait ramener des spans
-étrangers sur son modèle de domaine, et qui refuse ceux qui débordent du texte.
+The detector that talks to the model is piighost's BridgeDetector, not a local
+class. The library itself knows how to map foreign spans onto its domain model,
+and refuses the ones that run past the end of the text.
 
-Les libellés viennent de l'appelant, parce qu'ils dépendent du modèle chargé :
-GLiNER les reçoit en langue naturelle et en accepte n'importe lesquels, un
-modèle de token-classification impose les siens.
+The labels come from the caller, because they depend on the model loaded.
+GLiNER takes them in natural language and accepts any of them, while a
+token-classification model imposes its own.
 """
 
 import json
@@ -27,37 +27,37 @@ from piighost.models import Detection
 from piighost.pipeline import AnonymizationPipeline
 
 MAX_CHARS = 1000
-"""Longueur au-delà de laquelle le texte est découpé avant d'aller au modèle.
+"""Length above which the text is chunked before reaching the model.
 
-Un encodeur a une fenêtre de positions finie, 512 tokens pour la famille BERT,
-et la dépasser fait échouer l'inférence au lieu de la tronquer. La valeur est
-volontairement basse pour couvrir le plus petit des modèles du catalogue. Le
-découpage, le recalage des spans et la déduplication viennent de piighost, pas
-d'ici : BridgeDetector hérite de BaseNERDetector.
+An encoder has a finite position window, 512 tokens for the BERT family, and
+overflowing it fails the inference rather than truncating it. The value is
+deliberately low so it covers the smallest model in the catalogue. The
+chunking, the span remapping and the deduplication all come from piighost:
+BridgeDetector extends BaseNERDetector.
 """
 
 _regex_detector = RegexDetector({**GENERIC_PATTERNS, **FR_PATTERNS})
 
 
 class _Precomputed:
-    """Rejoue des détections déjà calculées, pour ne pas relancer le modèle."""
+    """Replay detections already computed, so the model runs once."""
 
     def __init__(self, detections: list[Detection]) -> None:
-        """Mémorise les détections à resservir."""
+        """Keep the detections to serve again."""
         self._detections = list(detections)
 
     async def detect(self, text: str) -> list[Detection]:
-        """Rend les détections telles quelles, sans regarder le texte."""
+        """Return the detections as they are, without looking at the text."""
         return list(self._detections)
 
 
 def _key(detection: Detection) -> tuple[int, int, str]:
-    """Identifie une détection par sa position et son libellé."""
+    """Identify a detection by its position and its label."""
     return (detection.span.start, detection.span.end, detection.label)
 
 
 async def run(text: str, threshold: float, use_model: bool, labels) -> str:
-    """Anonymise un texte et rend le détail de l'analyse en JSON."""
+    """Anonymise a text and return the analysis as JSON."""
     started = time.perf_counter()
     regex_hits = await _regex_detector.detect(text)
     rules_ms = (time.perf_counter() - started) * 1000
@@ -95,9 +95,9 @@ async def run(text: str, threshold: float, use_model: bool, labels) -> str:
         _key(detection) for entity in result.tokens for detection in entity.detections
     }
 
-    # Une règle et le modèle peuvent trouver le même span : c'est une seule
-    # détection à montrer, pas deux lignes identiques. La première provenance
-    # rencontrée est gardée, l'ordre d'insertion fait foi.
+    # A rule and the model can find the same span. That is one detection to
+    # show, not two identical rows. The first origin seen wins, and insertion
+    # order is authoritative.
     unique: dict[tuple[int, int, str], Detection] = {}
     for detection in sorted(regex_hits + model_hits, key=_key):
         unique.setdefault(_key(detection), detection)

@@ -1,4 +1,4 @@
-"""Compare les candidats taille navigateur au fp32 de reference."""
+"""Compare the browser-sized candidates against the fp32 reference."""
 import json
 import sys
 

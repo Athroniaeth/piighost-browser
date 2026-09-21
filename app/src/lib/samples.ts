@@ -1,9 +1,12 @@
 /**
- * Textes d'exemple, choisis pour montrer le partage des rôles.
+ * Sample texts, chosen to show the split of roles.
  *
- * Chacun mêle du PII de forme fixe, que les règles attrapent seules, et du PII
- * non structuré que seul le modèle voit. Les accents et les noms composés sont
- * volontaires : c'est là que les portages JS de GLiNER se trompent.
+ * Each mixes fixed-shape PII, which the rules catch on their own, with
+ * unstructured PII only the model sees. The accents and hyphenated names are
+ * deliberate: that is where the JavaScript ports of GLiNER go wrong.
+ *
+ * The sample texts themselves stay in French, since French PII is what they
+ * exercise. Their titles are bilingual.
  */
 
 export type Sample = {

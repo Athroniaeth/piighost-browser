@@ -1,5 +1,5 @@
 #!/bin/sh
-# Reconstruit l'image et remplace le conteneur derrière Traefik.
+# Rebuilds the image and replaces the container behind Traefik.
 set -eu
 HOST="${HOST:-piighost-wasm.athroniaeth.cloud}"
 cd "$(dirname "$0")"

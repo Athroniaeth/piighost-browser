@@ -1,8 +1,8 @@
 /**
- * Le client du Worker, côté thread principal.
+ * The worker client, on the main thread.
  *
- * Il ne fait que poster des messages et tenir l'état réactif. Aucun calcul ici :
- * c'est tout l'intérêt d'avoir déplacé Pyodide et ONNX dans un worker.
+ * It only posts messages and holds reactive state. No computation here, which
+ * is the whole point of moving Pyodide and ONNX into a worker.
  */
 
 import type { Analysis, ModelChoice } from "./worker";
@@ -21,7 +21,7 @@ class Engine {
   threads = $state(1);
   isolated = $state(false);
 
-  /** Le modèle chargé, null tant qu'aucun ne l'est. */
+  /** The loaded model, null until one is. */
   model = $state<{ id: string; engine: string; labels: string[] } | null>(null);
   loadingModel = $state(false);
 
@@ -30,7 +30,7 @@ class Engine {
   #modelWaiters: Pending[] = [];
   #nextId = 0;
 
-  /** Démarre le worker et lance le chargement du moteur. */
+  /** Start the worker and kick off the engine load. */
   start() {
     if (this.#worker) return;
     this.#worker = new Worker(new URL("./worker.ts", import.meta.url), {
@@ -85,7 +85,7 @@ class Engine {
     pending.resolve({ ...analysis, total: message.total as number });
   }
 
-  /** Charge, ou remplace, le modèle du worker. */
+  /** Load, or replace, the worker's model. */
   loadModel(choice: ModelChoice): Promise<void> {
     if (!this.#worker) return Promise.reject(new Error("The engine has not been started."));
     this.loadingModel = true;
@@ -97,7 +97,7 @@ class Engine {
     });
   }
 
-  /** Anonymise un texte dans le worker. */
+  /** Anonymise a text inside the worker. */
   run(
     text: string,
     threshold: number,

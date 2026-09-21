@@ -1,4 +1,4 @@
-"""gliner-pii-edge : fp32 de reference contre son export quint8 de 46 Mo."""
+"""gliner-pii-edge: the fp32 reference against its 46 MB quint8 export."""
 import json
 
 from gliner import GLiNER

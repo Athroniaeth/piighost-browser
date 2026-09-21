@@ -1,17 +1,17 @@
 /**
- * Le moteur, dans un Web Worker.
+ * The engine, inside a Web Worker.
  *
- * Tout ce qui est lourd vit ici : la session ONNX, Pyodide et piighost. Deux
- * raisons, et la seconde n'est pas négociable.
+ * Everything heavy lives here: the ONNX session, Pyodide and piighost. Two
+ * reasons, and the second one is not negotiable.
  *
- * L'inférence dure des centaines de millisecondes et gèlerait la page. Surtout,
- * sous Emscripten asyncio.to_thread ne lève pas d'erreur mais s'exécute sur le
- * thread appelant et bloque la boucle d'événements, donc Pyodide sur le thread
- * principal fige l'interface dès qu'un détecteur travaille.
+ * Inference takes hundreds of milliseconds and would freeze the page. More
+ * importantly, under Emscripten asyncio.to_thread does not raise: it runs on
+ * the calling thread and blocks the event loop, so Pyodide on the main thread
+ * freezes the interface as soon as a detector works.
  *
- * Les modèles sont tirés du Hub à la demande, pas empaquetés : c'est ce qui
- * permet d'en essayer un que le catalogue ne connaît pas. La Cache API les
- * garde sous leur URL, donc changer de modèle ne jette pas le précédent.
+ * Models are fetched from the Hub on demand rather than bundled, which is what
+ * lets you try one the catalogue does not know. The Cache API keeps them under
+ * their URL, so switching model does not throw the previous one away.
  */
 
 import * as ort from "onnxruntime-web/wasm";
@@ -78,11 +78,10 @@ const progress = (step: string, done: number, total: number) =>
   post({ type: "progress", step, done, total });
 
 /**
- * Récupère une ressource en passant par la Cache API.
+ * Fetch a resource through the Cache API.
  *
- * Un octet déjà téléchargé ne l'est pas deux fois, y compris entre deux
- * sessions et entre deux modèles. La progression est remontée quand le serveur
- * annonce une taille.
+ * A byte already downloaded is not downloaded twice, across sessions and across
+ * models. Progress is reported when the server announces a size.
  */
 async function cachedFetch(url: string, step: string): Promise<Response> {
   const cache = await caches.open(CACHE);
@@ -121,23 +120,23 @@ async function cachedFetch(url: string, step: string): Promise<Response> {
 }
 
 /**
- * Range une réponse dans le cache, sans faire échouer l'appelant.
+ * Store a response in the cache without failing the caller.
  *
- * Le quota par origine est fini et un gros modèle peut le dépasser : Chromium
- * rejette alors le put. Le cache n'est qu'un confort, donc un échec est avalé
- * et le modèle se charge quand même, quitte à être retéléchargé la prochaine
- * fois. Laisser l'erreur remonter interdirait purement et simplement les gros
- * modèles, alors que leur téléchargement a réussi.
+ * The per-origin quota is finite and a large model can exceed it, at which
+ * point Chromium rejects the put. The cache is a convenience, so a failure is
+ * swallowed and the model loads anyway, to be re-downloaded next time. Letting
+ * the error propagate would rule out large models outright, even though their
+ * download succeeded.
  */
 async function cachePut(cache: Cache, url: string, response: Response): Promise<void> {
   try {
     await cache.put(url, response);
   } catch {
-    // Quota dépassé ou stockage refusé : on continue sans cache.
+    // Quota exceeded or storage refused: carry on without a cache.
   }
 }
 
-/** Supprime les caches d'une version précédente du format. */
+/** Delete caches from a previous format version. */
 async function dropStaleCaches(): Promise<void> {
   const names = await caches.keys();
   const stale = names.filter(
@@ -146,20 +145,20 @@ async function dropStaleCaches(): Promise<void> {
   await Promise.all(stale.map((name) => caches.delete(name)));
 }
 
-/** Nombre de threads utilisables, un seul sans isolation d'origine. */
+/** How many threads are usable, one without cross-origin isolation. */
 function threadCount(): number {
   if (!self.crossOriginIsolated) return 1;
   return Math.max(1, Math.min(8, navigator.hardwareConcurrency ?? 4));
 }
 
-/** L'URL d'un fichier d'un dépôt du Hub. */
+/** The URL of a file in a Hub repository. */
 const hubUrl = (id: string, file: string) => `${HUB}/${id}/resolve/main/${file}`;
 
 /**
- * Charge un modèle GLiNER : les poids et le tokeniseur, puis la session.
+ * Load a GLiNER model: the weights and the tokenizer, then the session.
  *
- * Les trois fichiers sont tirés du Hub, donc un dépôt absent ou dépourvu
- * d'export ONNX échoue ici avec son code HTTP, pas plus loin.
+ * All three files come from the Hub, so a missing repository or one without an
+ * ONNX export fails here with its HTTP code, not later.
  */
 async function loadGliner(choice: ModelChoice): Promise<Runner> {
   const [weights, tokenizerJson, tokenizerConfig] = await Promise.all([
@@ -182,17 +181,16 @@ async function loadGliner(choice: ModelChoice): Promise<Runner> {
 }
 
 /**
- * Charge un modèle de token-classification, en laissant transformers.js faire.
+ * Load a token-classification model, letting transformers.js do the work.
  *
- * La bibliothèque connaît les architectures et gère son propre cache, donc on
- * ne lui prend que ce qu'elle ne sait pas faire : rendre les décalages.
+ * The library knows the architectures and manages its own cache, so the only
+ * thing taken from it is what it cannot do: return the offsets.
  */
 async function loadTransformers(choice: ModelChoice): Promise<Runner> {
   progress("modèle", 0, 1);
-  // transformers.js est importé statiquement et injecté. Le laisser se charger
-  // par un import dynamique faisait perdre au worker l'état posé par init sous
-  // WebKit, et le pipeline Python devenait injoignable après un chargement de
-  // modèle.
+  // transformers.js is imported statically and injected. Letting it load
+  // through a dynamic import made the worker lose the state init had set under
+  // WebKit, and the Python pipeline became unreachable after a model load.
   const engine = await TransformersNer.load({
     model: choice.id,
     dtype: choice.dtypeJs ?? "q8",
@@ -202,7 +200,7 @@ async function loadTransformers(choice: ModelChoice): Promise<Runner> {
   return engine as unknown as Runner;
 }
 
-/** Prépare Pyodide et piighost, sans aucun modèle. */
+/** Prepare Pyodide and piighost, with no model. */
 async function init(): Promise<void> {
   await dropStaleCaches();
   ort.env.wasm.wasmPaths = "/ort/";
@@ -232,8 +230,8 @@ async def _run(text, threshold, use_model, labels):
   pyRun = py.globals.get("_run");
   progress("piighost", 1, 1);
 
-  // Le pont Python appelle cette fonction ; js.nerInfer la voit depuis Pyodide
-  // parce que le module js expose la portée globale du worker.
+  // The Python bridge calls this function. js.nerInfer sees it from Pyodide
+  // because the js module exposes the worker's global scope.
   (self as unknown as Record<string, unknown>).nerInfer = async (
     text: string,
     labels: string[] | { toJs: () => string[] },
@@ -252,10 +250,10 @@ async def _run(text, threshold, use_model, labels):
 }
 
 /**
- * Remplace le modèle courant.
+ * Replace the current model.
  *
- * L'ancien est relâché avant le chargement du nouveau, sinon deux sessions
- * cohabitent dans un tas WebAssembly plafonné à 4 Go.
+ * The previous one is released before the new one loads, otherwise two sessions
+ * share a WebAssembly heap capped at 4 GB.
  */
 async function loadModel(choice: ModelChoice): Promise<void> {
   runner = null;

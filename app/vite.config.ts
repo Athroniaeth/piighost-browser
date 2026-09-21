@@ -7,7 +7,7 @@ export default defineConfig({
   worker: { format: "es" },
   server: {
     headers: {
-      // Débloque les threads WASM en développement, comme en production.
+      // Unlocks WASM threads in development, as in production.
       "Cross-Origin-Opener-Policy": "same-origin",
       "Cross-Origin-Embedder-Policy": "require-corp",
     },

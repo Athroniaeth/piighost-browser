@@ -1,9 +1,9 @@
 /**
- * Le catalogue de modèles, et ce qu'il faut pour en essayer un autre.
+ * The model catalogue, and what it takes to try another one.
  *
- * catalog.json est produit par tools/build-catalog.py, qui interroge le Hub :
- * les tailles y sont mesurées, pas recopiées, et une entrée dont les fichiers
- * manquent n'y entre pas.
+ * catalog.json is produced by tools/build-catalog.py, which queries the Hub.
+ * Sizes are measured rather than copied, and an entry whose files are missing
+ * does not get in.
  */
 
 import catalog from "./catalog.json";
@@ -21,7 +21,7 @@ export type ModelEntry = {
 
 export const CATALOG = catalog as ModelEntry[];
 
-/** Les libellés demandés à un GLiNER, en langue naturelle comme il les attend. */
+/** The labels asked of a GLiNER, in natural language as it expects them. */
 export const GLINER_LABELS: Record<string, string> = {
   PERSON: "person",
   LOCATION: "location",
@@ -29,11 +29,10 @@ export const GLINER_LABELS: Record<string, string> = {
 };
 
 /**
- * Rend la carte de libellés à passer au pipeline pour un modèle donné.
+ * Return the label map to pass the pipeline for a given model.
  *
- * GLiNER accepte n'importe quel libellé, on lui demande donc ce que les règles
- * ne savent pas faire. Un modèle de token-classification impose les siens, on
- * les reprend tels quels en écartant ce que les règles couvrent déjà mieux.
+ * GLiNER accepts any label, so it is asked for what the rules cannot do. A
+ * token-classification model imposes its own, which are taken as they come.
  */
 export function labelsFor(
   engine: string,
@@ -45,7 +44,7 @@ export function labelsFor(
   return map;
 }
 
-/** Une entrée saisie à la main, pour un modèle hors catalogue. */
+/** A hand-typed entry, for a model outside the catalogue. */
 export function customEntry(
   id: string,
   engine: "gliner" | "transformers",
@@ -61,7 +60,7 @@ export function customEntry(
   };
 }
 
-/** Le dtype que transformers.js déduit d'un nom de fichier. */
+/** The dtype transformers.js infers from a filename. */
 function weightsToDtype(weights: string): string {
   const table: Record<string, string> = {
     "onnx/model.onnx": "fp32",

@@ -1,92 +1,91 @@
-# Comment ça marche dans le navigateur
+# How this works in the browser
 
-Explication détaillée de ce qui tourne, de qui fait quoi, et de ce qui est
-piighost et ce qui ne l'est pas.
-
----
-
-## 1. La question de départ
-
-piighost est une bibliothèque Python. Un navigateur n'exécute pas Python, il
-exécute du JavaScript et du WebAssembly. Alors comment une bibliothèque Python
-peut-elle tourner dans un onglet ?
-
-Réponse en deux temps :
-
-1. **Python tourne bel et bien**, grâce à Pyodide, qui est l'interpréteur CPython
-   compilé en WebAssembly. Ce n'est pas une réécriture ni une imitation : c'est
-   le vrai CPython, version 3.14.2, dans la page.
-2. **Mais tout Python ne tourne pas.** Une bibliothèque qui dépend de code
-   machine compilé pour Linux ou Windows n'a rien à exécuter dans ce contexte.
-   C'est le cas de PyTorch, de Transformers, de tokenizers. Aucun n'existe pour
-   WebAssembly, et pour la plupart il n'existe même pas de source à recompiler.
-
-piighost tombe du bon côté : son cœur ne dépend que de la bibliothèque standard.
-Ses **détecteurs à modèle**, eux, tombent du mauvais côté. D'où toute
-l'architecture qui suit.
+A detailed walk through what runs, who does what, and which part is piighost
+and which part is not.
 
 ---
 
-## 2. Qui fait quoi
+## 1. The starting problem
+
+piighost is a Python library and a browser does not run Python, it runs
+JavaScript and WebAssembly. So how does a Python library run in a tab?
+
+In two halves.
+
+1. **Python really does run**, through Pyodide, which is the CPython
+   interpreter compiled to WebAssembly. Not a rewrite and not an imitation:
+   the real CPython, version 3.14.2, in the page.
+2. **But not all of Python runs.** A library that depends on machine code
+   compiled for Linux or Windows has nothing to execute here. That covers
+   PyTorch, Transformers and tokenizers. None exists for WebAssembly, and for
+   most of them there is not even a source to recompile.
+
+piighost falls on the good side: its core depends on nothing but the standard
+library. Its **model-backed detectors** fall on the bad side. Everything below
+follows from that.
+
+---
+
+## 2. Who does what
 
 ```
-  ┌──────────────────────────── L'ONGLET DU NAVIGATEUR ────────────────────────────┐
-  │                                                                                │
-  │   THREAD PRINCIPAL                    │   WEB WORKER (un second fil)           │
-  │   ─────────────────                   │   ─────────────────────────            │
-  │                                       │                                        │
-  │   ┌─────────────────────┐             │   ┌──────────────────────────────┐     │
-  │   │  Interface Svelte   │  message    │   │  Pyodide                     │     │
-  │   │                     │ ──────────► │   │  (CPython 3.14 en WASM)      │     │
-  │   │  texte, exemples,   │             │   │                              │     │
-  │   │  surlignage, liste  │ ◄────────── │   │   ┌──────────────────────┐   │     │
-  │   └─────────────────────┘  résultat   │   │   │  piighost 1.8.0      │   │     │
-  │                                       │   │   │  (la roue PyPI,      │   │     │
-  │                                       │   │   │   non modifiée)      │   │     │
-  │                                       │   │   │                      │   │     │
-  │                                       │   │   │  RegexDetector       │   │     │
-  │                                       │   │   │  BridgeDetector ─────┼───┼──┐  │
-  │                                       │   │   │  OverlapResolver     │   │  │  │
-  │                                       │   │   │  EntityLinker        │   │  │  │
-  │                                       │   │   │  Anonymizer          │   │  │  │
-  │                                       │   │   └──────────────────────┘   │  │  │
-  │                                       │   └──────────────────────────────┘  │  │
-  │                                       │                                     │  │
-  │                                       │   ┌──────────────────────────────┐  │  │
-  │                                       │   │  @piighost/gliner-web  ◄─────┼──┘  │
-  │                                       │   │  ONNX Runtime Web            │     │
-  │                                       │   │  modèle GLiNER (83 Mo)       │     │
-  │                                       │   │            (JavaScript)      │     │
-  │                                       │   └──────────────────────────────┘     │
-  └────────────────────────────────────────────────────────────────────────────────┘
+  ┌────────────────────────────── THE BROWSER TAB ─────────────────────────────┐
+  │                                                                            │
+  │   MAIN THREAD                      │   WEB WORKER (a second thread)         │
+  │   ───────────                      │   ────────────────────────             │
+  │                                    │                                        │
+  │   ┌─────────────────────┐          │   ┌──────────────────────────────┐     │
+  │   │  Svelte interface   │ message  │   │  Pyodide                     │     │
+  │   │                     │ ───────► │   │  (CPython 3.14 in WASM)      │     │
+  │   │  text, samples,     │          │   │                              │     │
+  │   │  highlight, list    │ ◄─────── │   │   ┌──────────────────────┐   │     │
+  │   └─────────────────────┘  result  │   │   │  piighost 1.8.0      │   │     │
+  │                                    │   │   │  (the PyPI wheel,    │   │     │
+  │                                    │   │   │   unmodified)        │   │     │
+  │                                    │   │   │                      │   │     │
+  │                                    │   │   │  RegexDetector       │   │     │
+  │                                    │   │   │  BridgeDetector ─────┼───┼──┐  │
+  │                                    │   │   │  OverlapResolver     │   │  │  │
+  │                                    │   │   │  EntityLinker        │   │  │  │
+  │                                    │   │   │  Anonymizer          │   │  │  │
+  │                                    │   │   └──────────────────────┘   │  │  │
+  │                                    │   └──────────────────────────────┘  │  │
+  │                                    │                                     │  │
+  │                                    │   ┌──────────────────────────────┐  │  │
+  │                                    │   │  @piighost/ner-web  ◄────────┼──┘  │
+  │                                    │   │  ONNX Runtime Web            │     │
+  │                                    │   │  the NER model               │     │
+  │                                    │   │            (JavaScript)      │     │
+  │                                    │   └──────────────────────────────┘     │
+  └────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Alors, on n'utilise que piighost ?
+### So is it only piighost?
 
-Non. Quatre briques, dont **une seule** est piighost.
+No. Four pieces, and **one** of them is piighost.
 
-| Brique | Rôle | Est-ce piighost ? |
+| Piece | Role | Is it piighost? |
 |---|---|---|
-| **Pyodide** | Fait tourner Python dans la page | Non, projet tiers |
-| **piighost** | Le pipeline de dé-identification | **Oui**, la roue PyPI telle quelle |
-| **ONNX Runtime Web** + `@piighost/gliner-web` | Fait tourner le modèle NER | Non, c'est du JavaScript à nous, mais pas la bibliothèque |
-| **Interface Svelte** | La page que tu vois | Non, c'est cette démo |
+| **Pyodide** | Runs Python in the page | No, a third-party project |
+| **piighost** | The de-identification pipeline | **Yes**, the PyPI wheel as-is |
+| **ONNX Runtime Web** + `@piighost/ner-web` | Runs the NER model | No, our JavaScript, but not the library |
+| **Svelte interface** | The page you see | No, this demo |
 
-Ce qui compte : **piighost n'est pas imité, il est exécuté.** Le même code que
-sur ton serveur. Si demain tu corriges un bug dans le résolveur de recouvrement,
-tu republies la roue et le navigateur en profite.
+What matters: **piighost is not imitated, it is executed.** The same code as on
+your server. Fix a bug in the overlap resolver tomorrow, republish the wheel,
+and the browser gets it.
 
 ---
 
-## 3. Le partage du travail entre les règles et le modèle
+## 3. Splitting the work between rules and model
 
-C'est l'idée centrale, et c'est ce qui rend l'ensemble viable.
+This is the central idea, and what makes the whole thing viable.
 
-Il y a deux sortes de données personnelles.
+There are two kinds of personal data.
 
 ```
-  CE QUI A UNE FORME FIXE                  CE QUI N'EN A PAS
-  ───────────────────────                  ─────────────────
+  WHAT HAS A FIXED SHAPE                   WHAT HAS NONE
+  ──────────────────────                   ─────────────
 
   jean.dupont@example.com                  Jean Dupont
   06 12 34 56 78                           Lyon
@@ -94,12 +93,12 @@ Il y a deux sortes de données personnelles.
   4111 1111 1111 1111                      12 rue de la Paix
   192.168.1.42
 
-  Une expression régulière                 Aucune règle ne les décrit.
-  les décrit exactement.                   Il faut un modèle qui comprenne
-  Zéro modèle, zéro milliseconde.          la phrase autour.
+  A regular expression describes           No rule describes them. You need
+  them exactly. No model, no               a model that understands the
+  milliseconds.                            sentence around them.
 ```
 
-Donc :
+So:
 
 ```
                     "Jean Dupont habite à Lyon, tel 06 12 34 56 78"
@@ -108,8 +107,8 @@ Donc :
                         ▼                               ▼
               ┌──────────────────┐            ┌──────────────────┐
               │  RegexDetector   │            │  BridgeDetector  │
-              │  (Python, dans   │            │  (Python, mais   │
-              │   piighost)      │            │   délègue au JS) │
+              │  (Python, inside │            │  (Python, but    │
+              │   piighost)      │            │   delegates)     │
               │                  │            │                  │
               │  ~1 ms           │            │  ~290 ms         │
               └────────┬─────────┘            └────────┬─────────┘
@@ -118,147 +117,144 @@ Donc :
                                             LOCATION [22,26] score 0.54
 ```
 
-Le modèle n'a donc **que trois libellés à connaître** : personne, lieu,
-organisation. Il n'a jamais à reconnaître un IBAN ni un courriel, puisque les
-règles les ont déjà. C'est pour cela qu'un modèle de 79 Mo suffit là où un
-modèle généraliste devrait tout savoir faire, et peser dix fois plus.
+The model therefore has **only three labels to know**: person, location,
+organisation. It never has to recognise an IBAN or an email, since the rules
+already have them. That is why an 86 MB model is enough where a generalist
+would have to do everything, and weigh ten times as much.
 
 ---
 
-## 4. Le trajet complet d'un texte
+## 4. A text's full journey
 
 ```
-  ①  Tu cliques sur « Anonymiser »
+  ①  You click "Anonymize"
       │
       │   postMessage({ type: "run", text })
       ▼
-  ②  Le Worker réveille Python
+  ②  The worker wakes Python up
       │
-      │   await pipeline.run(text, seuil, avec_modèle)
+      │   await pipeline.run(text, threshold, use_model)
       ▼
-  ③  piighost lance ses deux détecteurs
+  ③  piighost runs its two detectors
       │
-      ├──► RegexDetector : balaye le texte, rend des spans           [Python]
+      ├──► RegexDetector: scans the text, returns spans            [Python]
       │
-      └──► BridgeDetector : appelle une fonction JavaScript          [Python]
+      └──► BridgeDetector: calls a JavaScript function             [Python]
                 │
-                │   await js.glinerInfer(texte, libellés, seuil)
+                │   await js.nerInfer(text, labels, threshold)
                 ▼
-           ④  Côté JavaScript
-                │   - découpe le texte en mots, avec leurs positions
-                │   - construit l'entrée du modèle
-                │   - ONNX Runtime calcule (WebAssembly, 8 threads)
-                │   - décode les scores en spans
+           ④  On the JavaScript side
+                │   - splits the text into units, with their positions
+                │   - builds the model input
+                │   - ONNX Runtime computes (WebAssembly, 8 threads)
+                │   - decodes the scores into spans
                 ▼
                 │   [{start: 0, end: 11, label: "person", score: 0.72}, ...]
                 │
-           ⑤  Retour en Python
-                │   BridgeDetector vérifie chaque span, puis construit
-                │   des Detection avec le texte relu depuis la source
+           ⑤  Back in Python
+                │   BridgeDetector checks every span, then builds
+                │   Detections whose text is re-read from the source
                 ▼
-  ⑥  piighost enchaîne le reste de son pipeline habituel
+  ⑥  piighost runs the rest of its usual pipeline
       │
-      │   résolution des recouvrements ─► liaison en entités ─► remplacement
+      │   overlap resolution ─► entity linking ─► replacement
       ▼
-  ⑦  Le résultat repart vers l'interface
+  ⑦  The result goes back to the interface
       │
       │   postMessage({ anonymized, hits, timings })
       ▼
-  ⑧  L'interface surligne, liste, affiche
+  ⑧  The interface highlights, lists, displays
 ```
 
-Le point remarquable est l'étape ③ à ⑤ : **Python attend du JavaScript**.
-C'est possible parce qu'une promesse JavaScript devient un objet attendable en
-Python sous Pyodide. Le `await` est réel, pas simulé.
+The remarkable part is ③ to ⑤: **Python awaits JavaScript**. That works
+because a JavaScript promise becomes an awaitable object in Python under
+Pyodide. The `await` is real, not simulated.
 
 ---
 
-## 5. Ce qui traverse la frontière
+## 5. What crosses the boundary
 
-Très peu de choses, et c'est voulu.
+Very little, deliberately.
 
 ```
    PYTHON                                              JAVASCRIPT
    ──────                                              ──────────
 
-   "Jean Dupont habite à Lyon"     ──── texte ────►    (le modèle calcule)
-   ["person","location","organization"] ─ libellés ─►
-   0.35                            ──── seuil ────►
+   "Jean Dupont habite à Lyon"     ──── text ────►     (the model computes)
+   ["person","location","organization"] ── labels ──►
+   0.35                            ─── threshold ─►
 
                                                        [{start:0, end:11,
-   Detection(Span(0,11), "PERSON", 0.72)  ◄─ spans ──    label:"person",
+   Detection(Span(0,11), "PERSON", 0.72)  ◄── spans ──   label:"person",
                                                          score:0.72}, ...]
 ```
 
-Une phrase de quelques kilo-octets traverse en **0,2 microseconde**. L'inférence
-dure 290 millisecondes. Autrement dit le passage de frontière est un million de
-fois moins cher que le calcul : ce n'est pas un sujet de performance.
+A sentence of a few kilobytes crosses in **0.2 microseconds**. Inference takes
+290 milliseconds. The boundary is a million times cheaper than the computation,
+so it is not a performance question.
 
-Deux précautions au retour, parce que le JavaScript est du code étranger :
+Two precautions on the way back, because JavaScript is foreign code:
 
-- **Un span hors du texte est refusé**, il ne laisse pas passer une valeur
-  tronquée. Découper aux mauvaises positions laisserait une partie du nom en
-  clair.
-- **Le texte de la détection est relu depuis la source**, jamais repris de ce que
-  le JavaScript a renvoyé. Seules les positions font foi.
+- **A span outside the text is refused**, so no truncated value gets through.
+  Slicing at the wrong positions would leave part of a name in clear.
+- **The detection's text is re-read from the source**, never taken from what
+  JavaScript returned. Only the positions are authoritative.
 
 ---
 
-## 6. Pourquoi un second fil d'exécution
+## 6. Why a second thread
 
-Sans Worker, l'onglet se fige pendant les 290 ms de calcul : plus de défilement,
-plus de saisie, le curseur qui tourne.
+Without a worker, the tab freezes for the 290 ms of computation: no scrolling,
+no typing, a spinning cursor.
 
-Il y a une raison plus sournoise. En Python normal, on confie un calcul bloquant
-à un autre thread avec `asyncio.to_thread`. Sous WebAssembly il n'y a pas de
-threads, et cette fonction **ne le dit pas** : elle exécute quand même, sur le
-fil appelant, et bloque tout. Un code qui croit s'être libéré ne l'est pas.
+There is a subtler reason. In ordinary Python you hand a blocking computation
+to another thread with `asyncio.to_thread`. Under WebAssembly there are no
+threads, and that function **does not say so**: it runs anyway, on the calling
+thread, and blocks everything. Code that believes it freed itself has not.
 
 ```
-   SANS WORKER                          AVEC WORKER
-   ───────────                          ───────────
+   WITHOUT A WORKER                     WITH A WORKER
 
-   Thread principal                     Thread principal    Worker
+   Main thread                          Main thread        Worker
    │                                    │                   │
    ├─ interface                         ├─ interface        │
-   ├─ Python                            │   reste fluide    ├─ Python
-   ├─ modèle ██████ 290 ms              │                   ├─ modèle ██████
-   │   ↑ tout est gelé                  │                   │
+   ├─ Python                            │   stays fluid     ├─ Python
+   ├─ model ██████ 290 ms               │                   ├─ model ██████
+   │   ↑ everything frozen              │                   │
 ```
 
-La solution est donc structurelle : Pyodide et le modèle vivent tous les deux
-dans le Worker, et le thread principal ne fait que de l'affichage.
+The fix is therefore structural: Pyodide and the model both live in the worker,
+and the main thread only displays.
 
 ---
 
-## 7. Ce qui est téléchargé, et une seule fois
+## 7. What gets downloaded, and once
 
 ```
-   PREMIÈRE VISITE                              VISITES SUIVANTES
-   ───────────────                              ─────────────────
+   FIRST VISIT                                  LATER VISITS
+   ───────────                                  ────────────
 
-   Pyodide            6,3 Mo  ┐                 0 octet
-   ONNX Runtime       3,7 Mo  │ ~8 s            tout est servi
-   piighost           0,2 Mo  │                 depuis la Cache API
-   tokeniseur         0,7 Mo  │                 du navigateur
-   modèle GLiNER     59,5 Mo  ┘
-   ─────────────────────────
-   total             70,4 Mo
+   Pyodide            6.3 MB  ┐                 0 bytes
+   ONNX Runtime       3.7 MB  │ ~4 s            everything served
+   piighost           0.2 MB  ┘                 from the browser's
+   ─────────────────────────                    Cache API
+   engine            10.3 MB
+   + the model    29 to 662 MB, on demand
 ```
 
-Une fois cela chargé, **plus rien ne sort de la machine**. Pas d'appel d'API,
-pas de télémétrie. Le texte que tu colles reste dans l'onglet, l'analyse est
-faite sur place, et si tu coupes le réseau tout continue de fonctionner.
+Once that is loaded, **nothing leaves the machine**. No API call, no telemetry.
+The text you paste stays in the tab, the analysis happens on the spot, and if
+you cut the network everything keeps working.
 
-C'est la différence de nature avec une API de dé-identification : là il faut
-envoyer le texte à protéger à un serveur, ce qui est précisément ce qu'on
-cherchait à éviter.
+That is the difference in kind from a de-identification API: there you have to
+send the text you wanted to protect to a server, which is precisely what this
+avoids.
 
 ---
 
-## 8. Concrètement, à quoi ressemble le code
+## 8. What the code actually looks like
 
-Voici tout ce qui est propre au navigateur. Le reste est du piighost ordinaire.
+Here is everything specific to the browser. The rest is ordinary piighost.
 
 ```python
 from piighost.components.detector.ner import BridgeDetector
@@ -271,72 +267,77 @@ import js
 pipeline = AnonymizationPipeline(
     detector=CompositeDetector(
         [
-            # Les formes fixes, en Python, sans modèle.
+            # Fixed shapes, in Python, no model.
             RegexDetector({**GENERIC_PATTERNS, **FR_PATTERNS}),
-            # Le reste, délégué au modèle qui tourne en JavaScript.
+            # The rest, delegated to the model running in JavaScript.
             BridgeDetector(
-                js.glinerInfer,
+                js.nerInfer,
                 {"PERSON": "person", "LOCATION": "location",
                  "ORGANIZATION": "organization"},
                 threshold=0.35,
+                max_chars=1000,
             ),
         ]
     ),
 )
 
-result = await pipeline.anonymize(texte)
+result = await pipeline.anonymize(text)
 result.text     # "Bonjour <<PERSON:1>>, tel <<FR_PHONE:1>>"
 result.tokens   # {Entity(...): "<<PERSON:1>>", ...}
 
-pipeline.deanonymize(result.text, result.tokens)   # le texte d'origine
+pipeline.deanonymize(result.text, result.tokens)   # the original text
 ```
 
-Une seule ligne diffère d'un usage serveur : `BridgeDetector(js.glinerInfer, ...)`
-au lieu de `Gliner2PiiDetector()`. Tout le reste du pipeline est identique.
+One line differs from server-side use: `BridgeDetector(js.nerInfer, ...)`
+instead of `Gliner2PiiDetector()`. Everything else is the same pipeline.
 
-Et c'est bien là l'intérêt du port `AnyDetector` : le pipeline ne sait pas que
-son second détecteur habite dans un autre langage. Il lui demande des
-détections, il en reçoit.
+That is the point of the `AnyDetector` port: the pipeline does not know its
+second detector lives in another language. It asks for detections and receives
+them.
+
+`max_chars` is not decoration. An encoder has a finite position window, and
+overflowing it fails the inference rather than truncating it. piighost does the
+chunking, the span remapping and the deduplication.
 
 ---
 
-## 9. Et le cycle complet, anonymiser puis restaurer
+## 9. The full cycle, anonymise then restore
 
 ```
-   Texte d'origine
+   Original text
    "Appelle Jean Dupont au 06 12 34 56 78"
             │
             │  pipeline.anonymize()
             ▼
-   Texte anonymisé                          Table des jetons
+   Anonymised text                          Token table
    "Appelle <<PERSON:1>> au <<FR_PHONE:1>>"  <<PERSON:1>>   → "Jean Dupont"
             │                                <<FR_PHONE:1>> → "06 12 34 56 78"
             │
             ▼
    ┌──────────────────────────────────────────────┐
-   │  C'est ce texte-là qu'on envoie à un LLM,    │
-   │  qu'on journalise, ou qu'on stocke.          │
-   │  Il ne contient plus aucune valeur réelle.   │
+   │  This is the text you send to an LLM, log,   │
+   │  or store. It holds no real value any more.  │
    └──────────────────────────────────────────────┘
             │
-            │  pipeline.deanonymize(réponse, jetons)
+            │  pipeline.deanonymize(reply, tokens)
             ▼
-   Texte restauré, valeurs réelles remises en place
+   Restored text, real values put back
 ```
 
-La table des jetons ne quitte jamais l'onglet. C'est elle qui permet la
-restauration, et c'est elle qu'il ne faut jamais transmettre.
+The token table never leaves the tab. It is what makes restoration possible,
+and it is what must never be transmitted.
 
 ---
 
-## 10. Les limites, dites clairement
+## 10. The limits, stated plainly
 
-- **Première visite à 70 Mo.** Sans modèle, en règles seules, l'ensemble tombe à
-  6,6 Mo et couvre déjà courriels, téléphones, IBAN, cartes et IP.
-- **Le modèle est petit.** 68 millions de paramètres, quantifié. Ses scores
-  plafonnent vers 0,77 là où un GLiNER complet donne 0,99. Il se trompe, surtout
-  sur les lieux.
-- **GLiNER 2 n'est pas utilisable ici**, son encodeur seul dépasse le gigaoctet.
-  Le navigateur reste sur la génération précédente.
-- **Safari et iOS ne sont pas testés**, et iOS évince plus volontiers les
-  gros caches.
+- **10.3 MB for the engine, plus 29 to 662 MB for a model.** Rules alone need
+  no model and already cover emails, phone numbers, IBANs, cards and IPs.
+- **The model is small.** 68 million parameters, quantised. Its scores top out
+  around 0.77 where a full GLiNER gives 0.99. It makes mistakes, mostly on
+  locations.
+- **GLiNER 2 is not usable here**, its encoder alone exceeds a gigabyte. The
+  browser stays on the previous generation.
+- **The Cache API does not survive a reload under WebKit**, so Safari may
+  re-download the model on every visit. Not confirmed against a real Safari.
+- **iOS is not tested**, and it evicts large caches more readily.

@@ -1,9 +1,9 @@
 /**
- * Deux exécuteurs NER, un seul contrat de sortie.
+ * Two NER runners, one output contract.
  *
- * Chacun rend des spans portant des décalages caractère, la forme que le
- * BridgeDetector de piighost consomme. Ils sont interchangeables : le choix se
- * fait sur la famille de modèle, pas sur ce que le pipeline en attend.
+ * Each returns spans carrying character offsets, the shape piighost's
+ * BridgeDetector consumes. They are interchangeable: the choice is made on the
+ * model family, not on what the pipeline expects.
  */
 
 export { splitWords } from "./splitter.js";

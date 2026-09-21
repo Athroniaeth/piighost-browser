@@ -1,4 +1,4 @@
-"""Sortie de référence du GLiNER Python officiel, pour comparaison avec le portage JS."""
+"""Reference output of the official Python GLiNER, to compare the JS port against."""
 import json
 import sys
 

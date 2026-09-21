@@ -1,19 +1,18 @@
 /**
- * Décodage BIO, reproduit d'après le pipeline token-classification de
- * référence.
+ * BIO decoding, reproduced from the reference token-classification pipeline.
  *
- * Chaque mot prend le libellé de son premier sous-token, ce que la
- * bibliothèque appelle la stratégie first. Les mots voisins portant le même
- * libellé sont ensuite regroupés en une entité, un préfixe B ouvrant toujours
- * un nouveau groupe. Le score du groupe est la moyenne des scores de ses mots,
- * comme en Python, pour que la parité soit vérifiable chiffre par chiffre.
+ * Each unit takes the label of its first sub-token, what the library calls the
+ * first strategy. Neighbouring units carrying the same label are then grouped
+ * into one entity, a B prefix always opening a new group. The group score is
+ * the mean of its units' scores, as in Python, so parity is checkable digit by
+ * digit.
  */
 
 /**
- * Sépare le préfixe BIO du libellé.
+ * Separate the BIO prefix from the label.
  *
- * Un libellé sans préfixe est traité comme un I, ce que fait la référence :
- * seul un B force l'ouverture d'un groupe.
+ * A label with no prefix is treated as an I, as the reference does: only a B
+ * forces a new group open.
  *
  * @param {string} name
  * @returns {{prefix: string, tag: string}}
@@ -25,14 +24,15 @@ function splitTag(name) {
 }
 
 /**
- * Normalise un vecteur de logits en probabilités.
+ * Normalise a logit vector into probabilities.
  *
- * Le maximum est retranché avant l'exponentielle, sinon un logit élevé déborde.
+ * The maximum is subtracted before the exponential, otherwise a large logit
+ * overflows.
  *
  * @param {Float32Array|number[]} logits
- * @param {number} offset Début du vecteur dans le tableau.
- * @param {number} count Nombre de classes.
- * @returns {{index: number, score: number}} La classe la plus probable.
+ * @param {number} offset Where the vector starts in the array.
+ * @param {number} count Number of classes.
+ * @returns {{index: number, score: number}} The most likely class.
  */
 function argmaxSoftmax(logits, offset, count) {
   let highest = -Infinity;
@@ -65,10 +65,10 @@ function argmaxSoftmax(logits, offset, count) {
  */
 
 /**
- * Décode les logits d'un modèle de token-classification en entités.
+ * Decode a token-classification model's logits into entities.
  *
- * @param {Float32Array|number[]} logits Aplatis, en [tokens, classes].
- * @param {number} classCount Nombre de classes du modèle.
+ * @param {Float32Array|number[]} logits Flattened, as [tokens, classes].
+ * @param {number} classCount Number of classes the model has.
  * @param {import("../splitter.js").Word[]} units
  * @param {number[]} firstTokenOfUnit
  * @param {Record<number, string>} idToLabel

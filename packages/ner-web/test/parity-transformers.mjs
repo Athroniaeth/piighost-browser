@@ -1,11 +1,12 @@
 /**
- * Parité du moteur transformers : le portage JS doit reproduire le pipeline
- * token-classification de référence, décalages caractère compris.
+ * Parity for the transformers engine: the JavaScript port must reproduce the
+ * reference token-classification pipeline, character offsets included.
  *
- * La référence vient de ref/gold_transformers.py, qui utilise le modèle
- * PyTorch. Le JS charge l'export ONNX en fp32 pour que l'écart numérique reste
- * celui de l'export, pas celui d'une quantification. Les spans et les libellés
- * sont comparés strictement, seuls les scores tolèrent un écart.
+ * The reference comes from ref/gold_transformers.py, which runs the same ONNX
+ * file through optimum. Comparing against the PyTorch repository instead would
+ * be meaningless: for this model the two declare a different number of labels
+ * and their outputs have nothing in common. Spans and labels are compared
+ * strictly, only the scores tolerate a deviation.
  */
 import fs from "node:fs";
 import { TransformersNer } from "../src/transformers/index.js";
@@ -29,8 +30,8 @@ for (const { text, entities: want } of gold.cases) {
   if (got.length !== want.length) {
     failures++;
     console.log(`FAIL ${label}`);
-    console.log(`  attendu : ${want.map((e) => `${e.label}[${e.start},${e.end}]`).join(" ") || "(rien)"}`);
-    console.log(`  obtenu  : ${got.map((e) => `${e.label}[${e.start},${e.end}]`).join(" ") || "(rien)"}`);
+    console.log(`  expected : ${want.map((e) => `${e.label}[${e.start},${e.end}]`).join(" ") || "(rien)"}`);
+    console.log(`  got  : ${got.map((e) => `${e.label}[${e.start},${e.end}]`).join(" ") || "(rien)"}`);
     continue;
   }
 
@@ -42,8 +43,8 @@ for (const { text, entities: want } of gold.cases) {
     if (a.start !== b.start || a.end !== b.end || a.label !== b.label || a.text !== b.text) {
       failures++;
       console.log(`FAIL ${label}`);
-      console.log(`  attendu ${a.label} ${JSON.stringify(a.text)} [${a.start},${a.end}]`);
-      console.log(`  obtenu  ${b.label} ${JSON.stringify(b.text)} [${b.start},${b.end}]`);
+      console.log(`  expected ${a.label} ${JSON.stringify(a.text)} [${a.start},${a.end}]`);
+      console.log(`  got  ${b.label} ${JSON.stringify(b.text)} [${b.start},${b.end}]`);
     } else if (delta > TOLERANCE) {
       failures++;
       console.log(`FAIL ${label} : score ${a.label} ${a.score} vs ${b.score} (écart ${delta.toExponential(2)})`);
@@ -51,6 +52,6 @@ for (const { text, entities: want } of gold.cases) {
   }
 }
 
-console.log(`\ntransformers | ${cases} cas, ${entities} entités comparées, écart de score max ${maxDelta.toExponential(2)}`);
-console.log(failures === 0 ? "PARITÉ OK" : `${failures} DIVERGENCES`);
+console.log(`\ntransformers | ${cases} cases, ${entities} entities compared, max score deviation ${maxDelta.toExponential(2)}`);
+console.log(failures === 0 ? "PARITY OK" : `${failures} DIVERGENCES`);
 process.exit(failures === 0 ? 0 : 1);

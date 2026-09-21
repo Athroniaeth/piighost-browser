@@ -1,12 +1,12 @@
-# Publie @piighost/ner-web sans jeton, par OIDC.
+# Publishes @piighost/ner-web without a token, over OIDC.
 #
-# npm reconnaît ce workflow comme éditeur de confiance, donc aucun secret n'est
-# stocké dans le dépôt. Le nom du fichier compte : il est déclaré tel quel dans
-# la configuration du paquet sur npmjs.com, donc le renommer casse la publication.
+# npm recognises this workflow as a trusted publisher, so no secret is stored in
+# the repository. The filename matters: it is declared as-is in the package
+# configuration on npmjs.com, so renaming it breaks publishing.
 #
-# Le premier envoi d'un paquet ne peut pas passer par là. npm exige que le
-# paquet existe avant d'accepter une configuration d'éditeur de confiance, donc
-# la version initiale part avec un jeton, puis ce workflow prend le relais.
+# A package's first upload cannot go through here. npm requires the package to
+# exist before it accepts a trusted publisher configuration, so the initial
+# version goes out with a token and this workflow takes over afterwards.
 name: publish ner-web
 
 on:
@@ -16,8 +16,8 @@ on:
   workflow_dispatch:
 
 permissions:
-  # Sans cela, npm ne reçoit aucun jeton OIDC et retombe sur une authentification
-  # qui n'existe pas ici.
+  # Without this npm receives no OIDC token and falls back on an authentication
+  # that does not exist here.
   id-token: write
   contents: read
 
@@ -30,39 +30,39 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      # Pas de registry-url ici. setup-node écrirait alors un .npmrc renvoyant
-      # à NODE_AUTH_TOKEN, qui n'existe pas puisque tout l'intérêt est de ne
-      # stocker aucun secret. npm enverrait ce jeton vide et échouerait en 401
-      # sans jamais tenter l'échange OIDC.
+      # No registry-url here. setup-node would then write an .npmrc pointing at
+      # NODE_AUTH_TOKEN, which does not exist since the whole point is to store
+      # no secret. npm would send that empty credential and fail with a 401
+      # without ever attempting the OIDC exchange.
       - uses: actions/setup-node@v5
         with:
           node-version: 22
 
-      # La version du npm fournie avec Node est souvent antérieure au support
-      # OIDC, et l'échec qu'elle produit ne dit pas pourquoi. La version est
-      # figée plutôt que suivie : ce npm là détient le droit de publier via
-      # OIDC, donc une version compromise publierait sous notre nom. Le prix
-      # est de la relever à la main.
-      - name: Installer npm 12.0.2
+      # The npm shipped with Node is often older than OIDC support, and the
+      # failure it produces does not say why. The version is pinned rather than
+      # followed: this npm holds the right to publish over OIDC, so a
+      # compromised release would publish under our name. The price is bumping
+      # it by hand.
+      - name: Install npm 12.0.2
         run: npm install -g npm@12.0.2
 
-      - name: Installer
+      - name: Install
         run: npm ci
 
-      # Le répertoire du paquet héberge le cache modèle de transformers.js, qui
-      # pèse plus de cent mégaoctets. Le champ files l'exclut, et cette étape
-      # vérifie qu'il l'exclut toujours.
-      - name: Vérifier le contenu du paquet
+      # The package directory holds the transformers.js model cache, which is
+      # over a hundred megabytes. The files field excludes it, and this step
+      # checks that it still does.
+      - name: Check the package contents
         run: |
           npm pack --dry-run 2>&1 | tee /tmp/pack.txt
           if grep -qE '\.onnx|\.cache/' /tmp/pack.txt; then
-            echo "Des poids de modèle entreraient dans le paquet." >&2
+            echo "Model weights would enter the package." >&2
             exit 1
           fi
 
-      # L'éditeur de confiance accorde npm publish en plus du staging, donc la
-      # publication est automatique. Retirer cette permission côté npm et
-      # remplacer la commande par npm stage publish remettrait une promotion
-      # manuelle en 2FA entre le workflow et les utilisateurs.
-      - name: Publier
+      # The trusted publisher grants npm publish alongside staging, so releases
+      # are automatic. Removing that permission on npm and replacing the command
+      # with npm stage publish would put a manual 2FA promotion back between the
+      # workflow and its users.
+      - name: Publish
         run: npm publish

@@ -1,4 +1,4 @@
-"""Le meme fichier ONNX uint8, mais decode par le GLiNER Python officiel."""
+"""The same uint8 ONNX file, decoded by the official Python GLiNER."""
 import json
 
 from gliner import GLiNER
